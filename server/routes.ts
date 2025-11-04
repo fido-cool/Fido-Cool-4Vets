@@ -1,23 +1,62 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth } from "./replitAuth";
+import { setupLocalAuth } from "./localAuth";
+import type { RequestHandler } from "express";
 import {
   insertClienteSchema,
   insertMascotaSchema,
   insertEventoSchema,
 } from "@shared/schema";
 
+// Helper para obtener el ID del usuario autenticado (funciona con Replit Auth y local auth)
+function getUserId(req: any): string | null {
+  if (!req.user) return null;
+  // Replit Auth usa req.user.claims.sub
+  if (req.user.claims && req.user.claims.sub) {
+    return req.user.claims.sub;
+  }
+  // Local auth usa req.user.id directamente
+  if (req.user.id) {
+    return req.user.id;
+  }
+  return null;
+}
+
+// Middleware de autenticación que funciona con ambos sistemas
+export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  
+  const userId = getUserId(req);
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  
+  next();
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
+  // Setup both authentication systems
   await setupAuth(app);
+  setupLocalAuth(app);
 
   // Auth routes
   app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const user = await storage.getUser(userId);
-      res.json(user);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      // No enviar passwordHash al cliente
+      const { passwordHash, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
@@ -27,7 +66,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Statistics endpoint
   app.get("/api/stats", isAuthenticated, async (req: any, res) => {
     try {
-      const veterinarioId = req.user.claims.sub;
+      const veterinarioId = getUserId(req);
+      if (!veterinarioId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const stats = await storage.getStats(veterinarioId);
       res.json(stats);
     } catch (error) {
@@ -39,7 +81,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Cliente routes
   app.get("/api/clientes", isAuthenticated, async (req: any, res) => {
     try {
-      const veterinarioId = req.user.claims.sub;
+      const veterinarioId = getUserId(req);
+      if (!veterinarioId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const clientes = await storage.getClientes(veterinarioId);
       res.json(clientes);
     } catch (error) {
@@ -50,7 +95,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/clientes/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const veterinarioId = req.user.claims.sub;
+      const veterinarioId = getUserId(req);
+      if (!veterinarioId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const id = parseInt(req.params.id);
       const cliente = await storage.getCliente(id, veterinarioId);
       if (!cliente) {
@@ -65,7 +113,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/clientes", isAuthenticated, async (req: any, res) => {
     try {
-      const veterinarioId = req.user.claims.sub;
+      const veterinarioId = getUserId(req);
+      if (!veterinarioId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const data = insertClienteSchema.parse({
         ...req.body,
         veterinarioId,
@@ -80,7 +131,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/clientes/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const veterinarioId = req.user.claims.sub;
+      const veterinarioId = getUserId(req);
+      if (!veterinarioId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const id = parseInt(req.params.id);
       const cliente = await storage.updateCliente(id, veterinarioId, req.body);
       if (!cliente) {
@@ -95,7 +149,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/clientes/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const veterinarioId = req.user.claims.sub;
+      const veterinarioId = getUserId(req);
+      if (!veterinarioId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteCliente(id, veterinarioId);
       if (!deleted) {
@@ -111,7 +168,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mascota routes
   app.get("/api/mascotas", isAuthenticated, async (req: any, res) => {
     try {
-      const veterinarioId = req.user.claims.sub;
+      const veterinarioId = getUserId(req);
+      if (!veterinarioId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const mascotas = await storage.getMascotas(veterinarioId);
       res.json(mascotas);
     } catch (error) {
@@ -122,7 +182,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/mascotas/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const veterinarioId = req.user.claims.sub;
+      const veterinarioId = getUserId(req);
+      if (!veterinarioId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const id = parseInt(req.params.id);
       const mascota = await storage.getMascota(id, veterinarioId);
       if (!mascota) {
@@ -148,7 +211,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/mascotas/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const veterinarioId = req.user.claims.sub;
+      const veterinarioId = getUserId(req);
+      if (!veterinarioId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const id = parseInt(req.params.id);
       const mascota = await storage.updateMascota(id, veterinarioId, req.body);
       if (!mascota) {
@@ -163,7 +229,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/mascotas/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const veterinarioId = req.user.claims.sub;
+      const veterinarioId = getUserId(req);
+      if (!veterinarioId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteMascota(id, veterinarioId);
       if (!deleted) {
@@ -179,7 +248,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Evento routes
   app.get("/api/eventos", isAuthenticated, async (req: any, res) => {
     try {
-      const veterinarioId = req.user.claims.sub;
+      const veterinarioId = getUserId(req);
+      if (!veterinarioId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const eventos = await storage.getEventos(veterinarioId);
       res.json(eventos);
     } catch (error) {
@@ -190,7 +262,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/eventos/upcoming", isAuthenticated, async (req: any, res) => {
     try {
-      const veterinarioId = req.user.claims.sub;
+      const veterinarioId = getUserId(req);
+      if (!veterinarioId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const eventos = await storage.getUpcomingEventos(veterinarioId);
       res.json(eventos);
     } catch (error) {
@@ -212,7 +287,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/eventos/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const veterinarioId = req.user.claims.sub;
+      const veterinarioId = getUserId(req);
+      if (!veterinarioId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteEvento(id, veterinarioId);
       if (!deleted) {
