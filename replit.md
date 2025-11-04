@@ -2,15 +2,20 @@
 
 ## Descripción General
 
-FidoCool es una plataforma SaaS para veterinarios que permite gestionar clientes (dueños de mascotas), mascotas, eventos médicos y programar visitas futuras. El sistema incluye autenticación completa usando Replit Auth y almacenamiento persistente en PostgreSQL.
+FidoCool es una plataforma SaaS para veterinarios que permite gestionar clientes (dueños de mascotas), mascotas, eventos médicos y programar visitas futuras. El sistema incluye autenticación dual (Replit Auth OAuth y email/password nativo) y almacenamiento persistente en PostgreSQL.
 
 ## Características Implementadas
 
 ### Autenticación
-- **Replit Auth**: Sistema de autenticación completo con soporte para Google, GitHub, X, Apple y email/password
+- **Sistema Dual de Autenticación**:
+  - **Replit Auth (OAuth)**: Soporte para Google, GitHub, X, Apple
+  - **Email/Password Nativo**: Registro y login con credenciales propias
+- **Seguridad de Passwords**: Hash con bcrypt (10 salt rounds)
 - Cada veterinario tiene su propio panel personalizado
 - Las sesiones se almacenan en PostgreSQL para mayor seguridad
 - Tokens de refresh automático para mantener sesiones activas
+- Protección de rutas: redirección automática a /login si no está autenticado
+- Páginas de Login y Registro con validación completa
 
 ### Gestión de Clientes
 - CRUD completo de clientes (dueños de mascotas)
@@ -68,8 +73,9 @@ FidoCool es una plataforma SaaS para veterinarios que permite gestionar clientes
 **users** (veterinarios)
 - id: UUID generado automáticamente
 - email: correo electrónico único
+- passwordHash: hash bcrypt de la contraseña (nullable - solo para auth local)
 - firstName, lastName: nombre del veterinario
-- profileImageUrl: foto de perfil de Replit
+- profileImageUrl: foto de perfil (nullable)
 - createdAt, updatedAt: timestamps
 
 **clientes** (dueños de mascotas)
@@ -101,8 +107,10 @@ FidoCool es una plataforma SaaS para veterinarios que permite gestionar clientes
 ## API Endpoints
 
 ### Autenticación
-- `GET /api/login` - Iniciar sesión con Replit Auth
-- `GET /api/logout` - Cerrar sesión
+- `POST /api/register` - Registro de nuevo usuario con email/password
+- `POST /api/auth/login` - Iniciar sesión con email/password
+- `POST /api/auth/logout` - Cerrar sesión
+- `GET /api/login` - Iniciar sesión con Replit Auth (OAuth)
 - `GET /api/callback` - Callback de OAuth
 - `GET /api/auth/user` - Obtener usuario autenticado
 
@@ -131,11 +139,12 @@ FidoCool es una plataforma SaaS para veterinarios que permite gestionar clientes
 
 ## Seguridad
 
-- Todos los endpoints (excepto `/api/login` y `/api/callback`) requieren autenticación
+- Todos los endpoints (excepto `/api/login`, `/api/register`, `/api/auth/login` y `/api/callback`) requieren autenticación
 - Los datos están aislados por veterinario - cada uno solo ve sus propios registros
 - Las sesiones usan cookies HTTP-only y secure
 - Refresh tokens automático para mantener sesiones sin interrupciones
 - Validación de datos con Zod en el backend
+- Passwords hasheados con bcrypt (10 salt rounds) antes de almacenar
 
 ## Variables de Entorno
 
@@ -182,6 +191,7 @@ npm run db:push      # Sincroniza esquema con la base de datos
 │   ├── routes.ts           # Definición de rutas
 │   ├── storage.ts          # Capa de acceso a datos
 │   ├── replitAuth.ts       # Configuración de autenticación
+│   ├── localAuth.ts        # Autenticación local con email/password
 │   ├── db.ts               # Conexión a PostgreSQL
 │   └── vite.ts             # Servidor Vite
 ├── shared/                  # Código compartido

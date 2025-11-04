@@ -4,17 +4,16 @@ import type { Express } from "express";
 import { storage } from "./storage";
 import { registerUserSchema, loginUserSchema, type User } from "@shared/schema";
 import { fromError } from "zod-validation-error";
+import bcrypt from "bcryptjs";
 
-// Función para hashear passwords (simple para desarrollo, usa bcrypt en producción)
-function hashPassword(password: string): string {
-  // En producción, usa bcrypt o argon2
-  // Por ahora usamos un hash simple para demostración
-  const crypto = require("crypto");
-  return crypto.createHash("sha256").update(password).digest("hex");
+// Función para hashear passwords usando bcrypt (10 rounds)
+async function hashPassword(password: string): Promise<string> {
+  const saltRounds = 10;
+  return await bcrypt.hash(password, saltRounds);
 }
 
-function verifyPassword(password: string, hash: string): boolean {
-  return hashPassword(password) === hash;
+async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  return await bcrypt.compare(password, hash);
 }
 
 export function setupLocalAuth(app: Express) {
@@ -33,7 +32,7 @@ export function setupLocalAuth(app: Express) {
             return done(null, false, { message: "Email o contraseña incorrectos" });
           }
 
-          const isValid = verifyPassword(password, user.passwordHash);
+          const isValid = await verifyPassword(password, user.passwordHash);
           if (!isValid) {
             return done(null, false, { message: "Email o contraseña incorrectos" });
           }
@@ -71,7 +70,7 @@ export function setupLocalAuth(app: Express) {
       }
 
       // Crear nuevo usuario
-      const passwordHash = hashPassword(password);
+      const passwordHash = await hashPassword(password);
       const newUser = await storage.createUser({
         email,
         passwordHash,
