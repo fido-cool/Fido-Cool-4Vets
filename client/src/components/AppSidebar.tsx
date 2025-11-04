@@ -1,5 +1,6 @@
-import { Home, Users, Heart, Calendar, Settings } from "lucide-react";
+import { Home, Users, Heart, Calendar, Settings, LogOut } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import {
   Sidebar,
   SidebarContent,
@@ -13,6 +14,8 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import logoImage from "@assets/generated_images/FidoCool_logo_veterinary_platform_b8907b76.png";
 
 const menuItems = [
@@ -44,7 +47,45 @@ const menuItems = [
 ];
 
 export function AppSidebar() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
+  const { toast } = useToast();
+  
+  const { data: user } = useQuery({
+    queryKey: ["/api/auth/user"],
+  });
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Sesión cerrada",
+          description: "Has cerrado sesión correctamente",
+        });
+        setLocation("/login");
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo cerrar la sesión",
+      });
+    }
+  };
+
+  const getInitials = (firstName?: string, lastName?: string) => {
+    const first = firstName?.charAt(0) || "";
+    const last = lastName?.charAt(0) || "";
+    return (first + last).toUpperCase() || "VT";
+  };
+
+  const fullName = user?.firstName && user?.lastName
+    ? `${user.firstName} ${user.lastName}`
+    : "Veterinario";
 
   return (
     <Sidebar>
@@ -81,19 +122,33 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-6">
+      <SidebarFooter className="p-6 space-y-3">
         <div className="flex items-center gap-3">
           <Avatar className="w-8 h-8">
-            <AvatarImage src="" />
+            <AvatarImage src={user?.profileImageUrl || ""} />
             <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-              DV
+              {getInitials(user?.firstName, user?.lastName)}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-sidebar-foreground truncate">Dr. Veterinario</p>
-            <p className="text-xs text-muted-foreground truncate">veterinario@fidocool.com</p>
+            <p className="text-sm font-medium text-sidebar-foreground truncate" data-testid="text-user-name">
+              {fullName}
+            </p>
+            <p className="text-xs text-muted-foreground truncate" data-testid="text-user-email">
+              {user?.email || ""}
+            </p>
           </div>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          onClick={handleLogout}
+          data-testid="button-logout"
+        >
+          <LogOut className="w-4 h-4 mr-2" />
+          Cerrar Sesión
+        </Button>
       </SidebarFooter>
     </Sidebar>
   );
