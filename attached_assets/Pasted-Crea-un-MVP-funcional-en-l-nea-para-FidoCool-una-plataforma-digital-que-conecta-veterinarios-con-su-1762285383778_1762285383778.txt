@@ -1,0 +1,47 @@
+Crea un MVP funcional en línea para FidoCool, una plataforma digital que conecta veterinarios con sus clientes (dueños de mascotas) y les permite gestionar de forma simple sus visitas, historial y próximos eventos.
+
+El objetivo es desarrollar una primera versión funcional (MVP) que permita validar el flujo básico de uso para veterinarios y sus clientes.
+
+Contexto de FidoCool
+
+FidoCool es una herramienta SaaS dirigida a veterinarios independientes y clínicas pequeñas que buscan digitalizar la relación con sus clientes. Su propósito es convertirse en el asistente digital del veterinario y del dueño de mascotas, centralizando la información médica, los recordatorios de visitas y los eventos relevantes en un solo lugar.
+
+Esta primera versión se enfoca únicamente en el lado del veterinario, priorizando la usabilidad, el registro básico y la trazabilidad de clientes y mascotas.
+
+1. Módulo de autenticación
+
+Registro y login de veterinarios mediante correo electrónico y contraseña.
+
+Cada veterinario debe tener un identificador único (ID).
+
+Una vez autenticado, el veterinario accede a su propio panel de gestión.
+
+2. Módulo de gestión de clientes y mascotas
+
+El veterinario autenticado puede registrar nuevos clientes (dueños) con datos básicos: nombre, teléfono y correo electrónico.
+
+Por cada cliente, puede registrar una o más mascotas con información como nombre, especie, raza, edad y notas.
+
+Por cada mascota, el veterinario puede crear eventos, que pueden ser:
+
+Registro de una visita realizada.
+
+Programación de una próxima visita (con fecha y descripción).
+
+3. Backend accesible
+
+El sistema debe contar con un backend o base de datos (por ejemplo: Airtable, Google Sheets, Supabase o similar) que almacene y muestre:
+
+ID de veterinarios activos.
+
+Total de clientes registrados por cada veterinario.
+
+Timestamp del registro (fecha y hora).
+
+Fechas de próximas visitas o eventos relevantes.
+
+4. Dashboard o panel básico
+
+Visualización del total de clientes, mascotas y próximos eventos por veterinario.
+
+Posibilidad de filtrar por fecha o tipo de evento (visita pasada o próxima).
