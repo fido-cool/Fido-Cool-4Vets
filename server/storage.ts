@@ -32,7 +32,7 @@ export interface IStorage {
   deleteCliente(id: number, veterinarioId: string): Promise<boolean>;
 
   // Mascota operations
-  getMascotas(veterinarioId: string): Promise<(Mascota & { clienteNombre: string })[]>;
+  getMascotas(veterinarioId: string): Promise<(Mascota & { cliente: { nombre: string } })[]>;
   getMascotasByCliente(clienteId: number): Promise<Mascota[]>;
   getMascota(id: number, veterinarioId: string): Promise<Mascota | undefined>;
   createMascota(mascota: InsertMascota): Promise<Mascota>;
@@ -45,11 +45,11 @@ export interface IStorage {
 
   // Evento operations
   getEventos(veterinarioId: string): Promise<
-    (Evento & { mascotaNombre: string; clienteNombre: string })[]
+    (Evento & { mascota: { nombre: string; cliente: { nombre: string } } })[]
   >;
   getEventosByMascota(mascotaId: number): Promise<Evento[]>;
   getUpcomingEventos(veterinarioId: string): Promise<
-    (Evento & { mascotaNombre: string; clienteNombre: string })[]
+    (Evento & { mascota: { nombre: string; cliente: { nombre: string } } })[]
   >;
   createEvento(evento: InsertEvento): Promise<Evento>;
   deleteEvento(id: number, veterinarioId: string): Promise<boolean>;
@@ -127,7 +127,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Mascota operations
-  async getMascotas(veterinarioId: string): Promise<(Mascota & { clienteNombre: string })[]> {
+  async getMascotas(veterinarioId: string): Promise<(Mascota & { cliente: { nombre: string } })[]> {
     const result = await db
       .select({
         id: mascotas.id,
@@ -138,13 +138,19 @@ export class DatabaseStorage implements IStorage {
         edad: mascotas.edad,
         notas: mascotas.notas,
         createdAt: mascotas.createdAt,
-        clienteNombre: clientes.nombre,
+        cliente: {
+          nombre: clientes.nombre,
+        },
       })
       .from(mascotas)
       .innerJoin(clientes, eq(mascotas.clienteId, clientes.id))
       .where(eq(clientes.veterinarioId, veterinarioId))
       .orderBy(desc(mascotas.createdAt));
-    return result;
+    
+    return result.map(row => ({
+      ...row,
+      cliente: { nombre: row.cliente.nombre },
+    }));
   }
 
   async getMascotasByCliente(clienteId: number): Promise<Mascota[]> {
@@ -229,7 +235,7 @@ export class DatabaseStorage implements IStorage {
   // Evento operations
   async getEventos(
     veterinarioId: string
-  ): Promise<(Evento & { mascotaNombre: string; clienteNombre: string })[]> {
+  ): Promise<(Evento & { mascota: { nombre: string; cliente: { nombre: string } } })[]> {
     const result = await db
       .select({
         id: eventos.id,
@@ -246,7 +252,21 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(clientes, eq(mascotas.clienteId, clientes.id))
       .where(eq(clientes.veterinarioId, veterinarioId))
       .orderBy(desc(eventos.fecha));
-    return result;
+    
+    return result.map(row => ({
+      id: row.id,
+      mascotaId: row.mascotaId,
+      tipo: row.tipo,
+      fecha: row.fecha,
+      descripcion: row.descripcion,
+      createdAt: row.createdAt,
+      mascota: {
+        nombre: row.mascotaNombre,
+        cliente: {
+          nombre: row.clienteNombre,
+        },
+      },
+    }));
   }
 
   async getEventosByMascota(mascotaId: number): Promise<Evento[]> {
@@ -259,7 +279,7 @@ export class DatabaseStorage implements IStorage {
 
   async getUpcomingEventos(
     veterinarioId: string
-  ): Promise<(Evento & { mascotaNombre: string; clienteNombre: string })[]> {
+  ): Promise<(Evento & { mascota: { nombre: string; cliente: { nombre: string } } })[]> {
     const now = new Date();
     const result = await db
       .select({
@@ -277,7 +297,21 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(clientes, eq(mascotas.clienteId, clientes.id))
       .where(and(eq(clientes.veterinarioId, veterinarioId), gte(eventos.fecha, now)))
       .orderBy(asc(eventos.fecha));
-    return result;
+    
+    return result.map(row => ({
+      id: row.id,
+      mascotaId: row.mascotaId,
+      tipo: row.tipo,
+      fecha: row.fecha,
+      descripcion: row.descripcion,
+      createdAt: row.createdAt,
+      mascota: {
+        nombre: row.mascotaNombre,
+        cliente: {
+          nombre: row.clienteNombre,
+        },
+      },
+    }));
   }
 
   async createEvento(evento: InsertEvento): Promise<Evento> {

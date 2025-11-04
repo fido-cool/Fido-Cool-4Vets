@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Search, MoreVertical, Mail, Phone } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -9,60 +10,68 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { AddClientDialog } from "@/components/AddClientDialog";
 import { EmptyState } from "@/components/EmptyState";
 import emptyClinicImage from "@assets/generated_images/Empty_clinic_waiting_room_118f76ed.png";
-
-interface Client {
-  id: number;
-  nombre: string;
-  telefono: string;
-  email: string;
-  numMascotas: number;
-  ultimaVisita: string;
-}
+import type { Cliente } from "@shared/schema";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Clientes() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [deleteClientId, setDeleteClientId] = useState<number | null>(null);
+  const { toast } = useToast();
 
-  const clients: Client[] = [
-    {
-      id: 1,
-      nombre: "Juan Pérez",
-      telefono: "+34 600 111 222",
-      email: "juan@ejemplo.com",
-      numMascotas: 2,
-      ultimaVisita: "2025-11-01",
+  const { data: clients = [], isLoading } = useQuery<Cliente[]>({
+    queryKey: ["/api/clientes"],
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/clientes/${id}`);
     },
-    {
-      id: 2,
-      nombre: "María García",
-      telefono: "+34 600 333 444",
-      email: "maria@ejemplo.com",
-      numMascotas: 1,
-      ultimaVisita: "2025-10-28",
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clientes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      toast({
+        title: "Cliente eliminado",
+        description: "El cliente ha sido eliminado exitosamente.",
+      });
+      setDeleteClientId(null);
     },
-    {
-      id: 3,
-      nombre: "Carlos López",
-      telefono: "+34 600 555 666",
-      email: "carlos@ejemplo.com",
-      numMascotas: 3,
-      ultimaVisita: "2025-10-15",
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el cliente. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
     },
-    {
-      id: 4,
-      nombre: "Ana Martínez",
-      telefono: "+34 600 777 888",
-      email: "ana@ejemplo.com",
-      numMascotas: 1,
-      ultimaVisita: "2025-10-10",
-    },
-  ];
+  });
 
   const filteredClients = clients.filter((client) =>
     client.nombre.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (isLoading) {
+    return (
+      <div className="p-8">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-muted rounded w-1/4"></div>
+          <div className="h-64 bg-muted rounded"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 space-y-6">
@@ -84,7 +93,7 @@ export default function Clientes() {
               description="Comienza agregando tu primer cliente para gestionar sus mascotas y visitas."
               imageSrc={emptyClinicImage}
               actionLabel="Agregar Cliente"
-              onAction={() => console.log("Add client")}
+              onAction={() => {}}
               actionTestId="button-empty-add-client"
             />
           </CardContent>
@@ -114,12 +123,6 @@ export default function Clientes() {
                       <th className="text-left p-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Contacto
                       </th>
-                      <th className="text-left p-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Mascotas
-                      </th>
-                      <th className="text-left p-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Última Visita
-                      </th>
                       <th className="text-right p-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Acciones
                       </th>
@@ -133,27 +136,21 @@ export default function Clientes() {
                         data-testid={`client-row-${client.id}`}
                       >
                         <td className="p-4">
-                          <p className="font-semibold text-foreground">{client.nombre}</p>
+                          <p className="font-semibold text-foreground" data-testid={`client-name-${client.id}`}>
+                            {client.nombre}
+                          </p>
                         </td>
                         <td className="p-4">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                               <Mail className="w-4 h-4" />
-                              <span>{client.email}</span>
+                              <span data-testid={`client-email-${client.id}`}>{client.email}</span>
                             </div>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                               <Phone className="w-4 h-4" />
-                              <span>{client.telefono}</span>
+                              <span data-testid={`client-phone-${client.id}`}>{client.telefono}</span>
                             </div>
                           </div>
-                        </td>
-                        <td className="p-4">
-                          <span className="text-sm text-foreground">{client.numMascotas}</span>
-                        </td>
-                        <td className="p-4">
-                          <span className="text-sm text-muted-foreground">
-                            {new Date(client.ultimaVisita).toLocaleDateString("es-ES")}
-                          </span>
                         </td>
                         <td className="p-4 text-right">
                           <DropdownMenu>
@@ -167,15 +164,10 @@ export default function Clientes() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => console.log("Ver detalles", client.id)}>
-                                Ver Detalles
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => console.log("Editar", client.id)}>
-                                Editar
-                              </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => console.log("Eliminar", client.id)}
+                                onClick={() => setDeleteClientId(client.id)}
                                 className="text-destructive"
+                                data-testid={`menu-delete-client-${client.id}`}
                               >
                                 Eliminar
                               </DropdownMenuItem>
@@ -191,6 +183,29 @@ export default function Clientes() {
           </Card>
         </>
       )}
+
+      <AlertDialog open={deleteClientId !== null} onOpenChange={(open) => !open && setDeleteClientId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar cliente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará permanentemente al cliente y todas sus mascotas y eventos asociados.
+              Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete-client">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteClientId && deleteMutation.mutate(deleteClientId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-delete-client"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Eliminando..." : "Eliminar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

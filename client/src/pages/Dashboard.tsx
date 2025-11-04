@@ -1,4 +1,5 @@
 import { Users, Heart, Calendar, Clock } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { MetricCard } from "@/components/MetricCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,46 +7,59 @@ import { AddClientDialog } from "@/components/AddClientDialog";
 import { AddPetDialog } from "@/components/AddPetDialog";
 import { AddEventDialog } from "@/components/AddEventDialog";
 import emptyCalendarImage from "@assets/generated_images/Empty_calendar_with_paw_3920e332.png";
+import type { Evento, Mascota } from "@shared/schema";
+
+interface Stats {
+  totalClientes: number;
+  totalMascotas: number;
+  proximosEventos: number;
+}
+
+interface EventoWithMascota extends Evento {
+  mascota?: Mascota & { cliente?: { nombre: string } };
+}
 
 export default function Dashboard() {
-  const upcomingEvents = [
-    {
-      id: 1,
-      petName: "Max",
-      ownerName: "Juan Pérez",
-      type: "Vacunación",
-      date: "2025-11-05",
-      time: "10:00",
-    },
-    {
-      id: 2,
-      petName: "Luna",
-      ownerName: "María García",
-      type: "Consulta",
-      date: "2025-11-05",
-      time: "14:30",
-    },
-    {
-      id: 3,
-      petName: "Rocky",
-      ownerName: "Carlos López",
-      type: "Revisión",
-      date: "2025-11-06",
-      time: "09:00",
-    },
-    {
-      id: 4,
-      petName: "Milo",
-      ownerName: "Ana Martínez",
-      type: "Cirugía",
-      date: "2025-11-07",
-      time: "11:00",
-    },
-  ];
+  const { data: stats, isLoading: statsLoading } = useQuery<Stats>({
+    queryKey: ["/api/stats"],
+  });
 
-  const totalClients = 24;
-  const totalPets = 38;
-  const upcomingEventsCount = upcomingEvents.length;
+  const { data: upcomingEvents = [], isLoading: eventsLoading } = useQuery<EventoWithMascota[]>({
+    queryKey: ["/api/eventos/upcoming"],
+  });
+
+  const isLoading = statsLoading || eventsLoading;
+
+  if (isLoading) {
+    return (
+      <div className="p-8">
+        <div className="animate-pulse space-y-8">
+          <div className="h-8 bg-muted rounded w-1/4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-32 bg-muted rounded"></div>
+            ))}
+          </div>
+          <div className="h-64 bg-muted rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  const getEventTypeColor = (tipo: string) => {
+    switch (tipo.toLowerCase()) {
+      case "vacunación":
+        return "default";
+      case "consulta":
+        return "secondary";
+      case "cirugía":
+        return "destructive";
+      case "revisión":
+        return "outline";
+      default:
+        return "secondary";
+    }
+  };
 
   return (
     <div className="p-8 space-y-8">
@@ -66,19 +80,19 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <MetricCard
           title="Total Clientes"
-          value={totalClients}
+          value={stats?.totalClientes || 0}
           icon={Users}
           testId="metric-total-clients"
         />
         <MetricCard
           title="Total Mascotas"
-          value={totalPets}
+          value={stats?.totalMascotas || 0}
           icon={Heart}
           testId="metric-total-pets"
         />
         <MetricCard
           title="Próximos Eventos"
-          value={upcomingEventsCount}
+          value={stats?.proximosEventos || 0}
           icon={Calendar}
           testId="metric-upcoming-events"
         />
@@ -103,37 +117,47 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="space-y-4">
-              {upcomingEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className="flex flex-wrap items-center gap-4 p-4 rounded-md hover-elevate active-elevate-2 border bg-card"
-                  data-testid={`event-${event.id}`}
-                >
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="flex flex-col items-center justify-center bg-primary/10 rounded-md p-3 min-w-[60px]">
-                      <span className="text-xs font-medium text-primary uppercase">
-                        {new Date(event.date).toLocaleDateString("es-ES", { month: "short" })}
-                      </span>
-                      <span className="text-2xl font-bold text-primary">
-                        {new Date(event.date).getDate()}
-                      </span>
+              {upcomingEvents.map((event) => {
+                const eventDate = new Date(event.fecha);
+                return (
+                  <div
+                    key={event.id}
+                    className="flex flex-wrap items-center gap-4 p-4 rounded-md hover-elevate active-elevate-2 border bg-card"
+                    data-testid={`event-${event.id}`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="flex flex-col items-center justify-center bg-primary/10 rounded-md p-3 min-w-[60px]">
+                        <span className="text-xs font-medium text-primary uppercase">
+                          {eventDate.toLocaleDateString("es-ES", { month: "short" })}
+                        </span>
+                        <span className="text-2xl font-bold text-primary">
+                          {eventDate.getDate()}
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-semibold text-foreground">{event.mascota?.nombre || "Mascota"}</h4>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {event.mascota?.cliente?.nombre || "Propietario desconocido"}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <h4 className="font-semibold text-foreground">{event.petName}</h4>
-                      <p className="text-sm text-muted-foreground truncate">{event.ownerName}</p>
+                    <div className="flex items-center gap-3">
+                      <Badge variant={getEventTypeColor(event.tipo)} className="whitespace-nowrap">
+                        {event.tipo}
+                      </Badge>
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground whitespace-nowrap">
+                        <Clock className="w-4 h-4" />
+                        <span>
+                          {eventDate.toLocaleTimeString("es-ES", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Badge variant="secondary" className="whitespace-nowrap">
-                      {event.type}
-                    </Badge>
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground whitespace-nowrap">
-                      <Clock className="w-4 h-4" />
-                      <span>{event.time}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>

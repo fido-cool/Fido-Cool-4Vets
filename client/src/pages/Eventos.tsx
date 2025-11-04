@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Calendar, Filter } from "lucide-react";
+import { Calendar, Filter, Trash2 } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,90 +11,65 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { AddEventDialog } from "@/components/AddEventDialog";
 import { EmptyState } from "@/components/EmptyState";
 import emptyCalendarImage from "@assets/generated_images/Empty_calendar_with_paw_3920e332.png";
+import type { Evento, Mascota } from "@shared/schema";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
-interface Event {
-  id: number;
-  mascota: string;
-  propietario: string;
-  tipo: string;
-  fecha: string;
-  hora: string;
-  descripcion: string;
-  pasado: boolean;
+interface EventoWithMascota extends Evento {
+  mascota?: Mascota & { cliente?: { nombre: string } };
 }
 
 export default function Eventos() {
   const [filter, setFilter] = useState<"all" | "upcoming" | "past">("all");
+  const [deleteEventId, setDeleteEventId] = useState<number | null>(null);
+  const { toast } = useToast();
 
-  const events: Event[] = [
-    {
-      id: 1,
-      mascota: "Max",
-      propietario: "Juan Pérez",
-      tipo: "Vacunación",
-      fecha: "2025-11-05",
-      hora: "10:00",
-      descripcion: "Vacuna antirrábica anual",
-      pasado: false,
-    },
-    {
-      id: 2,
-      mascota: "Luna",
-      propietario: "María García",
-      tipo: "Consulta",
-      fecha: "2025-11-05",
-      hora: "14:30",
-      descripcion: "Revisión general de salud",
-      pasado: false,
-    },
-    {
-      id: 3,
-      mascota: "Rocky",
-      propietario: "Carlos López",
-      tipo: "Revisión",
-      fecha: "2025-11-06",
-      hora: "09:00",
-      descripcion: "Control post-operatorio",
-      pasado: false,
-    },
-    {
-      id: 4,
-      mascota: "Max",
-      propietario: "Juan Pérez",
-      tipo: "Consulta",
-      fecha: "2025-11-01",
-      hora: "11:00",
-      descripcion: "Problema digestivo",
-      pasado: true,
-    },
-    {
-      id: 5,
-      mascota: "Luna",
-      propietario: "María García",
-      tipo: "Vacunación",
-      fecha: "2025-10-28",
-      hora: "15:00",
-      descripcion: "Triple felina",
-      pasado: true,
-    },
-    {
-      id: 6,
-      mascota: "Milo",
-      propietario: "Ana Martínez",
-      tipo: "Cirugía",
-      fecha: "2025-10-20",
-      hora: "09:30",
-      descripcion: "Esterilización",
-      pasado: true,
-    },
-  ];
+  const { data: eventos = [], isLoading } = useQuery<EventoWithMascota[]>({
+    queryKey: ["/api/eventos"],
+  });
 
-  const filteredEvents = events.filter((event) => {
-    if (filter === "upcoming") return !event.pasado;
-    if (filter === "past") return event.pasado;
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/eventos/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/eventos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      toast({
+        title: "Evento eliminado",
+        description: "El evento ha sido eliminado exitosamente.",
+      });
+      setDeleteEventId(null);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el evento. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const now = new Date();
+  const filteredEvents = eventos.filter((event) => {
+    const eventDate = new Date(event.fecha);
+    const isPast = eventDate < now;
+
+    if (filter === "upcoming") return !isPast;
+    if (filter === "past") return isPast;
     return true;
   });
 
@@ -112,6 +88,21 @@ export default function Eventos() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="p-8">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-muted rounded w-1/4"></div>
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-24 bg-muted rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-8 space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -124,95 +115,145 @@ export default function Eventos() {
         <AddEventDialog />
       </div>
 
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-muted-foreground" />
-          <Select value={filter} onValueChange={(value: any) => setFilter(value)}>
-            <SelectTrigger className="w-[200px]" data-testid="select-event-filter">
-              <SelectValue placeholder="Filtrar eventos" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos los Eventos</SelectItem>
-              <SelectItem value="upcoming">Próximos</SelectItem>
-              <SelectItem value="past">Pasados</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>{filteredEvents.length} eventos encontrados</span>
-        </div>
-      </div>
-
-      {filteredEvents.length === 0 ? (
+      {eventos.length === 0 ? (
         <Card>
           <CardContent className="p-0">
             <EmptyState
-              title="No hay eventos para mostrar"
-              description="No se encontraron eventos con los filtros seleccionados."
+              title="No hay eventos registrados"
+              description="Programa el primer evento para gestionar las visitas de tus pacientes."
               imageSrc={emptyCalendarImage}
+              actionLabel="Agregar Evento"
+              onAction={() => {}}
+              actionTestId="button-empty-add-event"
             />
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-primary" />
-              Lista de Eventos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {filteredEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className="flex flex-wrap gap-4 p-4 rounded-md border bg-card hover-elevate active-elevate-2"
-                  data-testid={`event-item-${event.id}`}
-                >
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="flex flex-col items-center justify-center bg-primary/10 rounded-md p-3 min-w-[70px]">
-                      <span className="text-xs font-medium text-primary uppercase">
-                        {new Date(event.fecha).toLocaleDateString("es-ES", { month: "short" })}
-                      </span>
-                      <span className="text-2xl font-bold text-primary">
-                        {new Date(event.fecha).getDate()}
-                      </span>
-                      <span className="text-xs text-muted-foreground">{event.hora}</span>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-semibold text-foreground">{event.mascota}</h4>
-                        <Badge variant={getEventTypeColor(event.tipo)} className="text-xs">
-                          {event.tipo}
-                        </Badge>
-                        {event.pasado && (
-                          <Badge variant="outline" className="text-xs">
-                            Pasado
-                          </Badge>
-                        )}
+        <>
+          <div className="flex items-center gap-3">
+            <Filter className="w-5 h-5 text-muted-foreground" />
+            <Select value={filter} onValueChange={(value: any) => setFilter(value)}>
+              <SelectTrigger className="w-[200px]" data-testid="select-event-filter">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los Eventos</SelectItem>
+                <SelectItem value="upcoming">Próximos</SelectItem>
+                <SelectItem value="past">Pasados</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-4">
+            {filteredEvents.map((event) => {
+              const eventDate = new Date(event.fecha);
+              const isPast = eventDate < now;
+
+              return (
+                <Card key={event.id} className="hover-elevate" data-testid={`event-card-${event.id}`}>
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex gap-4 flex-1">
+                        <div className="flex items-center justify-center w-16 h-16 rounded-md bg-primary/10">
+                          <Calendar className="w-8 h-8 text-primary" />
+                        </div>
+
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-semibold text-lg text-foreground" data-testid={`event-pet-${event.id}`}>
+                              {event.mascota?.nombre || "Mascota desconocida"}
+                            </h3>
+                            <Badge variant={getEventTypeColor(event.tipo)} data-testid={`event-type-${event.id}`}>
+                              {event.tipo}
+                            </Badge>
+                            {isPast && (
+                              <Badge variant="outline" className="text-muted-foreground">
+                                Pasado
+                              </Badge>
+                            )}
+                          </div>
+
+                          {event.mascota?.cliente && (
+                            <p className="text-sm text-muted-foreground">
+                              Propietario: <span className="text-foreground">{event.mascota.cliente.nombre}</span>
+                            </p>
+                          )}
+
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span data-testid={`event-date-${event.id}`}>
+                              {eventDate.toLocaleDateString("es-ES", {
+                                weekday: "long",
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              })}
+                            </span>
+                            <span data-testid={`event-time-${event.id}`}>
+                              {eventDate.toLocaleTimeString("es-ES", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </div>
+
+                          {event.descripcion && (
+                            <p className="text-sm text-muted-foreground pt-2" data-testid={`event-description-${event.id}`}>
+                              {event.descripcion}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {event.propietario}
-                      </p>
-                      <p className="text-sm text-muted-foreground mt-1">{event.descripcion}</p>
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setDeleteEventId(event.id)}
+                        data-testid={`button-delete-event-${event.id}`}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => console.log("Ver detalles", event.id)}
-                      data-testid={`button-view-event-${event.id}`}
-                    >
-                      Ver Detalles
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                  </CardContent>
+                </Card>
+              );
+            })}
+
+            {filteredEvents.length === 0 && (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <p className="text-muted-foreground">
+                    No hay eventos {filter === "upcoming" ? "próximos" : filter === "past" ? "pasados" : ""} para mostrar.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </>
       )}
+
+      <AlertDialog open={deleteEventId !== null} onOpenChange={(open) => !open && setDeleteEventId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar evento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará permanentemente este evento médico.
+              Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete-event">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteEventId && deleteMutation.mutate(deleteEventId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-delete-event"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Eliminando..." : "Eliminar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

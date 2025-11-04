@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Search, MoreVertical } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,72 +12,59 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { AddPetDialog } from "@/components/AddPetDialog";
 import { EmptyState } from "@/components/EmptyState";
 import addPetImage from "@assets/generated_images/Add_new_pet_illustration_87160775.png";
+import type { Mascota, Cliente } from "@shared/schema";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
-interface Pet {
-  id: number;
-  nombre: string;
-  especie: string;
-  raza: string;
-  edad: string;
-  propietario: string;
-  ultimaVisita: string;
+interface MascotaWithCliente extends Mascota {
+  cliente?: Cliente;
 }
 
 export default function Mascotas() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [deletePetId, setDeletePetId] = useState<number | null>(null);
+  const { toast } = useToast();
 
-  const pets: Pet[] = [
-    {
-      id: 1,
-      nombre: "Max",
-      especie: "Perro",
-      raza: "Labrador",
-      edad: "3 años",
-      propietario: "Juan Pérez",
-      ultimaVisita: "2025-11-01",
-    },
-    {
-      id: 2,
-      nombre: "Luna",
-      especie: "Gato",
-      raza: "Siamés",
-      edad: "2 años",
-      propietario: "María García",
-      ultimaVisita: "2025-10-28",
-    },
-    {
-      id: 3,
-      nombre: "Rocky",
-      especie: "Perro",
-      raza: "Bulldog",
-      edad: "5 años",
-      propietario: "Carlos López",
-      ultimaVisita: "2025-10-15",
-    },
-    {
-      id: 4,
-      nombre: "Milo",
-      especie: "Perro",
-      raza: "Golden Retriever",
-      edad: "1 año",
-      propietario: "Ana Martínez",
-      ultimaVisita: "2025-10-10",
-    },
-    {
-      id: 5,
-      nombre: "Coco",
-      especie: "Ave",
-      raza: "Loro",
-      edad: "4 años",
-      propietario: "Carlos López",
-      ultimaVisita: "2025-09-20",
-    },
-  ];
+  const { data: mascotas = [], isLoading } = useQuery<MascotaWithCliente[]>({
+    queryKey: ["/api/mascotas"],
+  });
 
-  const filteredPets = pets.filter((pet) =>
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/mascotas/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mascotas"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      toast({
+        title: "Mascota eliminada",
+        description: "La mascota ha sido eliminada exitosamente.",
+      });
+      setDeletePetId(null);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la mascota. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const filteredPets = mascotas.filter((pet) =>
     pet.nombre.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -88,10 +76,29 @@ export default function Mascotas() {
         return "🐱";
       case "ave":
         return "🦜";
+      case "roedor":
+        return "🐹";
+      case "reptil":
+        return "🦎";
       default:
         return "🐾";
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="p-8">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-muted rounded w-1/4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-64 bg-muted rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 space-y-6">
@@ -105,7 +112,7 @@ export default function Mascotas() {
         <AddPetDialog />
       </div>
 
-      {pets.length === 0 ? (
+      {mascotas.length === 0 ? (
         <Card>
           <CardContent className="p-0">
             <EmptyState
@@ -113,7 +120,7 @@ export default function Mascotas() {
               description="Agrega la primera mascota para comenzar a gestionar su historial médico."
               imageSrc={addPetImage}
               actionLabel="Agregar Mascota"
-              onAction={() => console.log("Add pet")}
+              onAction={() => {}}
               actionTestId="button-empty-add-pet"
             />
           </CardContent>
@@ -143,8 +150,10 @@ export default function Mascotas() {
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <h3 className="font-semibold text-lg text-foreground">{pet.nombre}</h3>
-                        <p className="text-sm text-muted-foreground">{pet.raza}</p>
+                        <h3 className="font-semibold text-lg text-foreground" data-testid={`pet-name-${pet.id}`}>
+                          {pet.nombre}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">{pet.raza || "Sin raza especificada"}</p>
                       </div>
                     </div>
                     <DropdownMenu>
@@ -158,15 +167,10 @@ export default function Mascotas() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => console.log("Ver historial", pet.id)}>
-                          Ver Historial
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => console.log("Editar", pet.id)}>
-                          Editar
-                        </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => console.log("Eliminar", pet.id)}
+                          onClick={() => setDeletePetId(pet.id)}
                           className="text-destructive"
+                          data-testid={`menu-delete-pet-${pet.id}`}
                         >
                           Eliminar
                         </DropdownMenuItem>
@@ -177,26 +181,29 @@ export default function Mascotas() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Especie:</span>
-                      <Badge variant="secondary">{pet.especie}</Badge>
+                      <Badge variant="secondary" data-testid={`pet-species-${pet.id}`}>{pet.especie}</Badge>
                     </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Edad:</span>
-                      <span className="text-foreground">{pet.edad}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Propietario:</span>
-                      <span className="text-foreground font-medium truncate ml-2">
-                        {pet.propietario}
-                      </span>
-                    </div>
-                    <div className="pt-3 border-t">
-                      <p className="text-xs text-muted-foreground">
-                        Última visita:{" "}
-                        <span className="text-foreground">
-                          {new Date(pet.ultimaVisita).toLocaleDateString("es-ES")}
+                    {pet.edad && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Edad:</span>
+                        <span className="text-foreground">{pet.edad}</span>
+                      </div>
+                    )}
+                    {pet.cliente && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Propietario:</span>
+                        <span className="text-foreground font-medium truncate ml-2" data-testid={`pet-owner-${pet.id}`}>
+                          {pet.cliente.nombre}
                         </span>
-                      </p>
-                    </div>
+                      </div>
+                    )}
+                    {pet.notas && (
+                      <div className="pt-3 border-t">
+                        <p className="text-xs text-muted-foreground">
+                          Notas: <span className="text-foreground">{pet.notas}</span>
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -204,6 +211,29 @@ export default function Mascotas() {
           </div>
         </>
       )}
+
+      <AlertDialog open={deletePetId !== null} onOpenChange={(open) => !open && setDeletePetId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar mascota?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará permanentemente a la mascota y todos sus eventos médicos asociados.
+              Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete-pet">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletePetId && deleteMutation.mutate(deletePetId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-delete-pet"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Eliminando..." : "Eliminar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
