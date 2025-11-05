@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,20 +21,22 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus } from "lucide-react";
+import type { Cliente } from "@shared/schema";
 
 interface AddPetDialogProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onAdd?: (pet: {
     nombre: string;
     especie: string;
     raza: string;
     edad: string;
     notas: string;
-    clienteId: string;
+    clienteId: number;
   }) => void;
 }
 
-export function AddPetDialog({ onAdd }: AddPetDialogProps) {
-  const [open, setOpen] = useState(false);
+export function AddPetDialog({ open, onOpenChange, onAdd }: AddPetDialogProps) {
   const [nombre, setNombre] = useState("");
   const [especie, setEspecie] = useState("");
   const [raza, setRaza] = useState("");
@@ -41,11 +44,15 @@ export function AddPetDialog({ onAdd }: AddPetDialogProps) {
   const [notas, setNotas] = useState("");
   const [clienteId, setClienteId] = useState("");
 
+  const { data: clientes = [] } = useQuery<Cliente[]>({
+    queryKey: ["/api/clientes"],
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (onAdd) {
-      onAdd({ nombre, especie, raza, edad, notas, clienteId });
-      console.log("Mascota agregada:", { nombre, especie, raza, edad, notas, clienteId });
+    if (onAdd && clienteId) {
+      onAdd({ nombre, especie, raza, edad, notas, clienteId: parseInt(clienteId) });
+      console.log("Mascota agregada:", { nombre, especie, raza, edad, notas, clienteId: parseInt(clienteId) });
     }
     setNombre("");
     setEspecie("");
@@ -53,13 +60,25 @@ export function AddPetDialog({ onAdd }: AddPetDialogProps) {
     setEdad("");
     setNotas("");
     setClienteId("");
-    setOpen(false);
+    onOpenChange?.(false);
+  };
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      setNombre("");
+      setEspecie("");
+      setRaza("");
+      setEdad("");
+      setNotas("");
+      setClienteId("");
+    }
+    onOpenChange?.(newOpen);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button data-testid="button-add-pet">
+        <Button data-testid="button-add-pet" onClick={() => onOpenChange?.(true)}>
           <Plus className="w-4 h-4 mr-2" />
           Nueva Mascota
         </Button>
@@ -80,9 +99,17 @@ export function AddPetDialog({ onAdd }: AddPetDialogProps) {
                   <SelectValue placeholder="Selecciona un cliente" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">Juan Pérez</SelectItem>
-                  <SelectItem value="2">María García</SelectItem>
-                  <SelectItem value="3">Carlos López</SelectItem>
+                  {clientes.length === 0 ? (
+                    <div className="p-2 text-sm text-muted-foreground">
+                      No hay clientes registrados
+                    </div>
+                  ) : (
+                    clientes.map((cliente) => (
+                      <SelectItem key={cliente.id} value={cliente.id.toString()}>
+                        {cliente.nombre}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -150,10 +177,10 @@ export function AddPetDialog({ onAdd }: AddPetDialogProps) {
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
+            <Button type="button" variant="secondary" onClick={() => handleOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" data-testid="button-submit-pet">
+            <Button type="submit" data-testid="button-submit-pet" disabled={!clienteId || clientes.length === 0}>
               Agregar Mascota
             </Button>
           </DialogFooter>

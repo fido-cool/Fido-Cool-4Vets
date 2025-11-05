@@ -36,10 +36,32 @@ interface MascotaWithCliente extends Mascota {
 export default function Mascotas() {
   const [searchTerm, setSearchTerm] = useState("");
   const [deletePetId, setDeletePetId] = useState<number | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const { data: mascotas = [], isLoading } = useQuery<MascotaWithCliente[]>({
     queryKey: ["/api/mascotas"],
+  });
+
+  const addMutation = useMutation({
+    mutationFn: async (pet: { nombre: string; especie: string; raza: string; edad: string; notas: string; clienteId: number }) => {
+      await apiRequest("POST", "/api/mascotas", pet);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mascotas"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      toast({
+        title: "Mascota agregada",
+        description: "La mascota ha sido registrada exitosamente.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo agregar la mascota. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    },
   });
 
   const deleteMutation = useMutation({
@@ -109,7 +131,11 @@ export default function Mascotas() {
             Gestiona todas las mascotas registradas
           </p>
         </div>
-        <AddPetDialog />
+        <AddPetDialog 
+          open={isDialogOpen} 
+          onOpenChange={setIsDialogOpen} 
+          onAdd={(pet) => addMutation.mutate(pet)} 
+        />
       </div>
 
       {mascotas.length === 0 ? (
@@ -120,7 +146,7 @@ export default function Mascotas() {
               description="Agrega la primera mascota para comenzar a gestionar su historial médico."
               imageSrc={addPetImage}
               actionLabel="Agregar Mascota"
-              onAction={() => {}}
+              onAction={() => setIsDialogOpen(true)}
               actionTestId="button-empty-add-pet"
             />
           </CardContent>
