@@ -30,10 +30,32 @@ import { useToast } from "@/hooks/use-toast";
 export default function Clientes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteClientId, setDeleteClientId] = useState<number | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const { data: clients = [], isLoading } = useQuery<Cliente[]>({
     queryKey: ["/api/clientes"],
+  });
+
+  const addMutation = useMutation({
+    mutationFn: async (client: { nombre: string; telefono: string; email: string }) => {
+      await apiRequest("POST", "/api/clientes", client);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clientes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      toast({
+        title: "Cliente agregado",
+        description: "El cliente ha sido registrado exitosamente.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo agregar el cliente. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    },
   });
 
   const deleteMutation = useMutation({
@@ -82,7 +104,11 @@ export default function Clientes() {
             Gestiona los dueños de mascotas registrados
           </p>
         </div>
-        <AddClientDialog />
+        <AddClientDialog 
+          open={isDialogOpen} 
+          onOpenChange={setIsDialogOpen} 
+          onAdd={(client) => addMutation.mutate(client)} 
+        />
       </div>
 
       {clients.length === 0 ? (
@@ -93,7 +119,7 @@ export default function Clientes() {
               description="Comienza agregando tu primer cliente para gestionar sus mascotas y visitas."
               imageSrc={emptyClinicImage}
               actionLabel="Agregar Cliente"
-              onAction={() => {}}
+              onAction={() => setIsDialogOpen(true)}
               actionTestId="button-empty-add-client"
             />
           </CardContent>

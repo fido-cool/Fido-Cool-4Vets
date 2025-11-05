@@ -14,11 +14,12 @@ import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
 
 interface AddClientDialogProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onAdd?: (client: { nombre: string; telefono: string; email: string }) => void;
 }
 
-export function AddClientDialog({ onAdd }: AddClientDialogProps) {
-  const [open, setOpen] = useState(false);
+export function AddClientDialog({ open, onOpenChange, onAdd }: AddClientDialogProps) {
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [email, setEmail] = useState("");
@@ -32,13 +33,22 @@ export function AddClientDialog({ onAdd }: AddClientDialogProps) {
     setNombre("");
     setTelefono("");
     setEmail("");
-    setOpen(false);
+    onOpenChange?.(false);
+  };
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      setNombre("");
+      setTelefono("");
+      setEmail("");
+    }
+    onOpenChange?.(newOpen);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button data-testid="button-add-client">
+        <Button data-testid="button-add-client" onClick={() => onOpenChange?.(true)}>
           <Plus className="w-4 h-4 mr-2" />
           Nuevo Cliente
         </Button>
@@ -89,7 +99,7 @@ export function AddClientDialog({ onAdd }: AddClientDialogProps) {
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
+            <Button type="button" variant="secondary" onClick={() => handleOpenChange(false)}>
               Cancelar
             </Button>
             <Button type="submit" data-testid="button-submit-client">
