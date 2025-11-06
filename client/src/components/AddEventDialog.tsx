@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,40 +21,59 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "lucide-react";
+import type { Mascota, Cliente } from "@shared/schema";
+
+interface MascotaWithCliente extends Mascota {
+  cliente?: Cliente;
+}
 
 interface AddEventDialogProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onAdd?: (event: {
-    mascotaId: string;
+    mascotaId: number;
     tipo: string;
     fecha: string;
     descripcion: string;
   }) => void;
 }
 
-export function AddEventDialog({ onAdd }: AddEventDialogProps) {
-  const [open, setOpen] = useState(false);
+export function AddEventDialog({ open, onOpenChange, onAdd }: AddEventDialogProps) {
   const [mascotaId, setMascotaId] = useState("");
   const [tipo, setTipo] = useState("");
   const [fecha, setFecha] = useState("");
   const [descripcion, setDescripcion] = useState("");
 
+  const { data: mascotas = [] } = useQuery<MascotaWithCliente[]>({
+    queryKey: ["/api/mascotas"],
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (onAdd) {
-      onAdd({ mascotaId, tipo, fecha, descripcion });
-      console.log("Evento agregado:", { mascotaId, tipo, fecha, descripcion });
+    if (onAdd && mascotaId) {
+      onAdd({ mascotaId: parseInt(mascotaId), tipo, fecha, descripcion });
     }
     setMascotaId("");
     setTipo("");
     setFecha("");
     setDescripcion("");
-    setOpen(false);
+    onOpenChange?.(false);
+  };
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      setMascotaId("");
+      setTipo("");
+      setFecha("");
+      setDescripcion("");
+    }
+    onOpenChange?.(newOpen);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button data-testid="button-add-event">
+        <Button data-testid="button-add-event" onClick={() => onOpenChange?.(true)}>
           <Calendar className="w-4 h-4 mr-2" />
           Nuevo Evento
         </Button>
@@ -74,9 +94,17 @@ export function AddEventDialog({ onAdd }: AddEventDialogProps) {
                   <SelectValue placeholder="Selecciona una mascota" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">Max (Juan Pérez)</SelectItem>
-                  <SelectItem value="2">Luna (María García)</SelectItem>
-                  <SelectItem value="3">Rocky (Carlos López)</SelectItem>
+                  {mascotas.length === 0 ? (
+                    <div className="p-2 text-sm text-muted-foreground">
+                      No hay mascotas registradas
+                    </div>
+                  ) : (
+                    mascotas.map((mascota) => (
+                      <SelectItem key={mascota.id} value={mascota.id.toString()}>
+                        {mascota.nombre} ({mascota.cliente?.nombre || "Sin dueño"})
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -121,10 +149,10 @@ export function AddEventDialog({ onAdd }: AddEventDialogProps) {
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
+            <Button type="button" variant="secondary" onClick={() => handleOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" data-testid="button-submit-event">
+            <Button type="submit" data-testid="button-submit-event" disabled={!mascotaId || mascotas.length === 0}>
               Registrar Evento
             </Button>
           </DialogFooter>

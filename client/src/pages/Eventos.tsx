@@ -35,10 +35,32 @@ interface EventoWithMascota extends Evento {
 export default function Eventos() {
   const [filter, setFilter] = useState<"all" | "upcoming" | "past">("all");
   const [deleteEventId, setDeleteEventId] = useState<number | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const { data: eventos = [], isLoading } = useQuery<EventoWithMascota[]>({
     queryKey: ["/api/eventos"],
+  });
+
+  const addMutation = useMutation({
+    mutationFn: async (event: { mascotaId: number; tipo: string; fecha: string; descripcion: string }) => {
+      await apiRequest("POST", "/api/eventos", event);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/eventos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      toast({
+        title: "Evento registrado",
+        description: "El evento ha sido registrado exitosamente.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo registrar el evento. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    },
   });
 
   const deleteMutation = useMutation({
@@ -112,7 +134,11 @@ export default function Eventos() {
             Historial y próximas visitas programadas
           </p>
         </div>
-        <AddEventDialog />
+        <AddEventDialog 
+          open={isDialogOpen} 
+          onOpenChange={setIsDialogOpen} 
+          onAdd={(event) => addMutation.mutate(event)} 
+        />
       </div>
 
       {eventos.length === 0 ? (
