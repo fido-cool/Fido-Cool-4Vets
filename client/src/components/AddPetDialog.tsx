@@ -117,11 +117,13 @@ export function AddPetDialog({ open, onOpenChange, onAdd }: AddPetDialogProps) {
               <Label htmlFor="nombre-pet">Nombre de la Mascota</Label>
               <Input
                 id="nombre-pet"
+                name="pet-nombre"
                 placeholder="Max"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
                 required
                 data-testid="input-pet-name"
+                autoComplete="off"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -145,11 +147,13 @@ export function AddPetDialog({ open, onOpenChange, onAdd }: AddPetDialogProps) {
                 <Label htmlFor="edad">Edad</Label>
                 <Input
                   id="edad"
+                  name="pet-edad"
                   placeholder="2 años"
                   value={edad}
                   onChange={(e) => setEdad(e.target.value)}
                   required
                   data-testid="input-pet-age"
+                  autoComplete="off"
                 />
               </div>
             </div>
@@ -157,22 +161,26 @@ export function AddPetDialog({ open, onOpenChange, onAdd }: AddPetDialogProps) {
               <Label htmlFor="raza">Raza</Label>
               <Input
                 id="raza"
+                name="pet-raza"
                 placeholder="Labrador"
                 value={raza}
                 onChange={(e) => setRaza(e.target.value)}
                 data-testid="input-pet-breed"
+                autoComplete="off"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="notas">Notas</Label>
               <Textarea
                 id="notas"
+                name="pet-notas"
                 placeholder="Información adicional sobre la mascota..."
                 value={notas}
                 onChange={(e) => setNotas(e.target.value)}
                 className="resize-none"
                 rows={3}
                 data-testid="input-pet-notes"
+                autoComplete="off"
               />
             </div>
           </div>

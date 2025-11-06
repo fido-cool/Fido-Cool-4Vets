@@ -45,6 +45,7 @@ export default function Mascotas() {
 
   const addMutation = useMutation({
     mutationFn: async (pet: { nombre: string; especie: string; raza: string; edad: string; notas: string; clienteId: number }) => {
+      console.log("🔍 Frontend - Sending pet data:", JSON.stringify(pet, null, 2));
       await apiRequest("POST", "/api/mascotas", pet);
     },
     onSuccess: () => {
