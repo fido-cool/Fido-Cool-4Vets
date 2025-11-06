@@ -112,10 +112,14 @@ export const eventos = pgTable("eventos", {
 });
 
 const baseInsertEventoSchema = createInsertSchema(eventos);
-export const insertEventoSchema = baseInsertEventoSchema.omit({
-  id: true,
-  createdAt: true,
-});
+export const insertEventoSchema = baseInsertEventoSchema
+  .omit({
+    id: true,
+    createdAt: true,
+  })
+  .extend({
+    fecha: z.string().transform((str) => new Date(str)),
+  });
 
 export type InsertEvento = z.infer<typeof insertEventoSchema>;
 export type Evento = typeof eventos.$inferSelect;

@@ -200,11 +200,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/mascotas", isAuthenticated, async (req: any, res) => {
     try {
+      console.log("📝 Creating mascota with data:", JSON.stringify(req.body, null, 2));
       const data = insertMascotaSchema.parse(req.body);
+      console.log("✅ Parsed data:", JSON.stringify(data, null, 2));
       const mascota = await storage.createMascota(data);
+      console.log("🐾 Created mascota:", JSON.stringify(mascota, null, 2));
       res.json(mascota);
     } catch (error: any) {
-      console.error("Error creating mascota:", error);
+      console.error("❌ Error creating mascota:", error);
       res.status(400).json({ message: error.message || "Failed to create mascota" });
     }
   });
