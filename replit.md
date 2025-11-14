@@ -25,16 +25,27 @@ FidoCool es una plataforma SaaS para veterinarios que permite gestionar clientes
 
 ### Gestión de Mascotas
 - CRUD completo de mascotas asociadas a clientes
-- Campos: nombre, especie, raza, edad, notas
+- Campos: nombre, especie, raza, edad, notas, foto (placeholder)
 - Relación con el dueño (cliente)
 - Visualización en tarjetas con información detallada
 
 ### Gestión de Eventos
 - Registro de visitas pasadas
 - Programación de visitas futuras
-- Tipos de eventos: consulta, vacunación, cirugía, revisión, urgencia
+- Tipos de eventos con colores distintivos:
+  - Consulta General (azul) - Vacunación (verde)
+  - Baño y Estética (púrpura) - Cirugía (rojo)
+  - Revisión (naranja) - Desparasitación (teal)
+  - Urgencia (rojo oscuro) - Otro (gris)
 - Filtros por tipo de evento (pasados vs próximos)
-- Vista de calendario con fecha y hora
+
+### Calendario Visual
+- Vista de calendario estilo Google Calendar/Outlook
+- Vistas semanal, mensual y diaria
+- Eventos diferenciados por color según tipo de servicio
+- Información completa: nombre cliente, mascota, tipo de servicio
+- Integración con sistema de citas y eventos
+- Botón "+ Nueva Cita" para crear eventos rápidamente
 
 ### Dashboard
 - Métricas en tiempo real:
@@ -43,6 +54,43 @@ FidoCool es una plataforma SaaS para veterinarios que permite gestionar clientes
   - Número de eventos próximos
 - Lista de próximos eventos ordenados por fecha
 - Acciones rápidas para agregar clientes, mascotas y eventos
+
+### Notificaciones Inteligentes
+- Sistema de alertas automatizadas generadas por Fido
+- Detección de clientes sin visitas recientes (>21 días)
+- Recordatorios de vacunas próximas (≤7 días)
+- Clasificación por prioridad (alta, media, baja)
+- Información completa del cliente y mascota
+- Opciones:
+  - Marcar como resuelto
+  - Enviar recordatorio (simulado)
+- Panel visual con badges de prioridad
+
+### Campañas de Reactivación
+- Detección automática de clientes inactivos (>30 días)
+- Lista interactiva con checkboxes para selección múltiple
+- Información detallada:
+  - Días de inactividad
+  - Fecha de última visita
+  - Datos de contacto completos
+- Plantilla de mensaje sugerida por Fido
+- Editor de mensaje personalizado con variables [nombre] y [mascota]
+- Función "Seleccionar todos"
+- Envío simulado de mensajes masivos
+- Contador visual de destinatarios seleccionados
+
+### Asistente Virtual "Fido"
+- Widget flotante inteligente en esquina inferior derecha
+- Avatar animado del perrito Fido
+- Sugerencias contextuales basadas en datos:
+  - Número de citas del día
+  - Recordatorios de confirmación de asistencia
+  - Alerta de clientes inactivos
+  - Guía para primeros pasos
+- Badge de notificaciones pendientes
+- Acciones rápidas para navegar a secciones relevantes
+- Animaciones suaves con Framer Motion
+- Dismissable por sugerencia individual
 
 ## Arquitectura Técnica
 
@@ -93,16 +141,28 @@ FidoCool es una plataforma SaaS para veterinarios que permite gestionar clientes
 - especie: perro, gato, ave, roedor, reptil, otro
 - raza: raza de la mascota (opcional)
 - edad: edad en formato texto
+- fotoUrl: URL de foto de la mascota (opcional)
 - notas: observaciones médicas
 - createdAt: timestamp
 
 **eventos**
 - id: integer auto-incrementado
 - mascotaId: referencia a la mascota (foreign key)
-- tipo: consulta, vacunación, cirugía, revisión, urgencia, otro
+- tipo: consulta, vacunacion, bano, cirugia, revision, desparasitacion, urgencia, otro
 - fecha: fecha y hora del evento
 - descripcion: detalles del evento
 - createdAt: timestamp
+
+### Tipos de Servicio con Colores
+El sistema incluye tipos de servicio predefinidos con colores asociados:
+- Consulta General (#3b82f6 - azul)
+- Vacunación (#10b981 - verde)
+- Baño y Estética (#8b5cf6 - púrpura)
+- Cirugía (#ef4444 - rojo)
+- Revisión (#f59e0b - naranja)
+- Desparasitación (#14b8a6 - teal)
+- Urgencia (#dc2626 - rojo oscuro)
+- Otro (#6b7280 - gris)
 
 ## API Endpoints
 

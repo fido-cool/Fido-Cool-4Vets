@@ -1,4 +1,4 @@
-import { Home, Users, Heart, Calendar, Settings, LogOut } from "lucide-react";
+import { Home, Users, Heart, Calendar, Settings, LogOut, Bell, Megaphone } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -25,6 +25,11 @@ const menuItems = [
     icon: Home,
   },
   {
+    title: "Calendario",
+    url: "/calendario",
+    icon: Calendar,
+  },
+  {
     title: "Clientes",
     url: "/clientes",
     icon: Users,
@@ -35,9 +40,14 @@ const menuItems = [
     icon: Heart,
   },
   {
-    title: "Eventos",
-    url: "/eventos",
-    icon: Calendar,
+    title: "Notificaciones",
+    url: "/notificaciones",
+    icon: Bell,
+  },
+  {
+    title: "Campañas",
+    url: "/campanas",
+    icon: Megaphone,
   },
   {
     title: "Configuración",

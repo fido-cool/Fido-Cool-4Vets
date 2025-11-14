@@ -47,11 +47,11 @@ export interface IStorage {
 
   // Evento operations
   getEventos(veterinarioId: string): Promise<
-    (Evento & { mascota: { nombre: string; cliente: { nombre: string } } })[]
+    (Evento & { mascota: { id: number; nombre: string; cliente: { id: number; nombre: string; telefono: string; email: string } } })[]
   >;
   getEventosByMascota(mascotaId: number): Promise<Evento[]>;
   getUpcomingEventos(veterinarioId: string): Promise<
-    (Evento & { mascota: { nombre: string; cliente: { nombre: string } } })[]
+    (Evento & { mascota: { id: number; nombre: string; cliente: { id: number; nombre: string; telefono: string; email: string } } })[]
   >;
   createEvento(evento: InsertEvento): Promise<Evento>;
   deleteEvento(id: number, veterinarioId: string): Promise<boolean>;
@@ -247,7 +247,7 @@ export class DatabaseStorage implements IStorage {
   // Evento operations
   async getEventos(
     veterinarioId: string
-  ): Promise<(Evento & { mascota: { nombre: string; cliente: { nombre: string } } })[]> {
+  ): Promise<(Evento & { mascota: { id: number; nombre: string; cliente: { id: number; nombre: string; telefono: string; email: string } } })[]> {
     const result = await db
       .select({
         id: eventos.id,
@@ -256,8 +256,12 @@ export class DatabaseStorage implements IStorage {
         fecha: eventos.fecha,
         descripcion: eventos.descripcion,
         createdAt: eventos.createdAt,
+        mascotaIdVal: mascotas.id,
         mascotaNombre: mascotas.nombre,
+        clienteId: clientes.id,
         clienteNombre: clientes.nombre,
+        clienteTelefono: clientes.telefono,
+        clienteEmail: clientes.email,
       })
       .from(eventos)
       .innerJoin(mascotas, eq(eventos.mascotaId, mascotas.id))
@@ -273,9 +277,13 @@ export class DatabaseStorage implements IStorage {
       descripcion: row.descripcion,
       createdAt: row.createdAt,
       mascota: {
+        id: row.mascotaIdVal,
         nombre: row.mascotaNombre,
         cliente: {
+          id: row.clienteId,
           nombre: row.clienteNombre,
+          telefono: row.clienteTelefono,
+          email: row.clienteEmail,
         },
       },
     }));
@@ -291,7 +299,7 @@ export class DatabaseStorage implements IStorage {
 
   async getUpcomingEventos(
     veterinarioId: string
-  ): Promise<(Evento & { mascota: { nombre: string; cliente: { nombre: string } } })[]> {
+  ): Promise<(Evento & { mascota: { id: number; nombre: string; cliente: { id: number; nombre: string; telefono: string; email: string } } })[]> {
     const now = new Date();
     const result = await db
       .select({
@@ -301,8 +309,12 @@ export class DatabaseStorage implements IStorage {
         fecha: eventos.fecha,
         descripcion: eventos.descripcion,
         createdAt: eventos.createdAt,
+        mascotaIdVal: mascotas.id,
         mascotaNombre: mascotas.nombre,
+        clienteId: clientes.id,
         clienteNombre: clientes.nombre,
+        clienteTelefono: clientes.telefono,
+        clienteEmail: clientes.email,
       })
       .from(eventos)
       .innerJoin(mascotas, eq(eventos.mascotaId, mascotas.id))
@@ -318,9 +330,13 @@ export class DatabaseStorage implements IStorage {
       descripcion: row.descripcion,
       createdAt: row.createdAt,
       mascota: {
+        id: row.mascotaIdVal,
         nombre: row.mascotaNombre,
         cliente: {
+          id: row.clienteId,
           nombre: row.clienteNombre,
+          telefono: row.clienteTelefono,
+          email: row.clienteEmail,
         },
       },
     }));

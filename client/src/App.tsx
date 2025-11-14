@@ -6,9 +6,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { FidoAssistant } from "@/components/FidoAssistant";
 import Dashboard from "@/pages/Dashboard";
+import Calendario from "@/pages/Calendario";
 import Clientes from "@/pages/Clientes";
 import Mascotas from "@/pages/Mascotas";
+import Notificaciones from "@/pages/Notificaciones";
+import Campanas from "@/pages/Campanas";
 import Eventos from "@/pages/Eventos";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
@@ -30,9 +34,12 @@ function ProtectedRoutes() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
+      <Route path="/calendario" component={Calendario} />
       <Route path="/clientes" component={Clientes} />
       <Route path="/mascotas" component={Mascotas} />
       <Route path="/eventos" component={Eventos} />
+      <Route path="/notificaciones" component={Notificaciones} />
+      <Route path="/campanas" component={Campanas} />
       <Route path="/configuracion" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
@@ -70,6 +77,7 @@ function AppContent() {
             <ProtectedRoutes />
           </main>
         </div>
+        <FidoAssistant />
       </div>
     </SidebarProvider>
   );
