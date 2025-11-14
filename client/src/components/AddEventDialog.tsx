@@ -22,6 +22,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "lucide-react";
 import type { Mascota, Cliente } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 
 interface MascotaWithCliente extends Mascota {
   cliente?: Cliente;
@@ -43,6 +44,7 @@ export function AddEventDialog({ open, onOpenChange, onAdd }: AddEventDialogProp
   const [tipo, setTipo] = useState("");
   const [fecha, setFecha] = useState("");
   const [descripcion, setDescripcion] = useState("");
+  const { toast } = useToast();
 
   const { data: mascotas = [] } = useQuery<MascotaWithCliente[]>({
     queryKey: ["/api/mascotas"],
@@ -50,14 +52,62 @@ export function AddEventDialog({ open, onOpenChange, onAdd }: AddEventDialogProp
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (onAdd && mascotaId) {
-      onAdd({ mascotaId: parseInt(mascotaId), tipo, fecha, descripcion });
+    
+    if (!mascotaId || mascotaId.trim() === "") {
+      toast({
+        title: "Error de validación",
+        description: "Debes seleccionar una mascota.",
+        variant: "destructive",
+      });
+      return;
     }
-    setMascotaId("");
-    setTipo("");
-    setFecha("");
-    setDescripcion("");
-    onOpenChange?.(false);
+    
+    if (!tipo || tipo.trim() === "") {
+      toast({
+        title: "Error de validación",
+        description: "Debes seleccionar el tipo de evento.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!fecha || fecha.trim() === "") {
+      toast({
+        title: "Error de validación",
+        description: "Debes ingresar la fecha y hora del evento.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const parsedDate = new Date(fecha);
+    if (isNaN(parsedDate.getTime())) {
+      toast({
+        title: "Error de validación",
+        description: "La fecha ingresada no es válida.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!descripcion.trim()) {
+      toast({
+        title: "Error de validación",
+        description: "La descripción del evento es obligatoria.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (onAdd) {
+      onAdd({ mascotaId: parseInt(mascotaId), tipo, fecha, descripcion });
+      
+      setMascotaId("");
+      setTipo("");
+      setFecha("");
+      setDescripcion("");
+      onOpenChange?.(false);
+    }
   };
 
   const handleOpenChange = (newOpen: boolean) => {

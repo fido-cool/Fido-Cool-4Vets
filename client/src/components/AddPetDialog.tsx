@@ -22,6 +22,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Plus } from "lucide-react";
 import type { Cliente } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 
 interface AddPetDialogProps {
   open?: boolean;
@@ -43,6 +44,7 @@ export function AddPetDialog({ open, onOpenChange, onAdd }: AddPetDialogProps) {
   const [edad, setEdad] = useState("");
   const [notas, setNotas] = useState("");
   const [clienteId, setClienteId] = useState("");
+  const { toast } = useToast();
 
   const { data: clientes = [] } = useQuery<Cliente[]>({
     queryKey: ["/api/clientes"],
@@ -50,17 +52,55 @@ export function AddPetDialog({ open, onOpenChange, onAdd }: AddPetDialogProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (onAdd && clienteId) {
+    
+    if (!clienteId || clienteId.trim() === "") {
+      toast({
+        title: "Error de validación",
+        description: "Debes seleccionar un cliente (dueño) para la mascota.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!nombre.trim()) {
+      toast({
+        title: "Error de validación",
+        description: "El nombre de la mascota es obligatorio.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!especie.trim()) {
+      toast({
+        title: "Error de validación",
+        description: "Debes seleccionar la especie de la mascota.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!edad.trim()) {
+      toast({
+        title: "Error de validación",
+        description: "La edad de la mascota es obligatoria.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (onAdd) {
       onAdd({ nombre, especie, raza, edad, notas, clienteId: parseInt(clienteId) });
       console.log("Mascota agregada:", { nombre, especie, raza, edad, notas, clienteId: parseInt(clienteId) });
+      
+      setNombre("");
+      setEspecie("");
+      setRaza("");
+      setEdad("");
+      setNotas("");
+      setClienteId("");
+      onOpenChange?.(false);
     }
-    setNombre("");
-    setEspecie("");
-    setRaza("");
-    setEdad("");
-    setNotas("");
-    setClienteId("");
-    onOpenChange?.(false);
   };
 
   const handleOpenChange = (newOpen: boolean) => {

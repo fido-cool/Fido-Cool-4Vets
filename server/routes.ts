@@ -200,9 +200,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/mascotas", isAuthenticated, async (req: any, res) => {
     try {
+      const veterinarioId = getUserId(req);
+      if (!veterinarioId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
       console.log("📝 Creating mascota with data:", JSON.stringify(req.body, null, 2));
-      const data = insertMascotaSchema.parse(req.body);
+      const data = insertMascotaSchema.parse(req.body) as InsertMascota;
       console.log("✅ Parsed data:", JSON.stringify(data, null, 2));
+      
+      const cliente = await storage.getCliente(data.clienteId, veterinarioId);
+      if (!cliente) {
+        return res.status(403).json({ message: "El cliente no pertenece a este veterinario" });
+      }
+      
       const mascota = await storage.createMascota(data);
       console.log("🐾 Created mascota:", JSON.stringify(mascota, null, 2));
       res.json(mascota);
@@ -279,7 +290,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/eventos", isAuthenticated, async (req: any, res) => {
     try {
-      const data = insertEventoSchema.parse(req.body);
+      const veterinarioId = getUserId(req);
+      if (!veterinarioId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const data = insertEventoSchema.parse(req.body) as InsertEvento;
+      
+      const mascota = await storage.getMascota(data.mascotaId, veterinarioId);
+      if (!mascota) {
+        return res.status(403).json({ message: "La mascota no pertenece a este veterinario" });
+      }
+      
       const evento = await storage.createEvento(data);
       res.json(evento);
     } catch (error: any) {

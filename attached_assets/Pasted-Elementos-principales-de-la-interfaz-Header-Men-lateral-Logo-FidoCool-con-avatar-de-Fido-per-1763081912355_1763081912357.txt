@@ -1,0 +1,103 @@
+Elementos principales de la interfaz
+
+Header / Menú lateral
+Logo FidoCool con avatar de Fido (perrito simpático).
+
+Opciones de navegación:
+
+Calendario
+
+Clientes y Mascotas
+
+Notificaciones
+
+Campañas / Recordatorios
+
+Configuración
+
+Calendario visual (vista principal por defecto)
+Calendario estilo Google Calendar / Outlook, con vista semanal y mensual.
+
+Cada cita muestra: nombre del cliente, nombre de la mascota, tipo de servicio (ej: “Visita médica”, “Baño”, “Vacuna”).
+
+Algunas citas ya cargadas de ejemplo (ejemplo:
+
+Lunes 10:00 am → María López – Luna (Baño)
+
+Martes 4:00 pm → Carlos Díaz – Max (Consulta médica)).
+
+Citas diferenciadas por color según servicio.
+
+Botón “+ Nueva cita” en la esquina superior.
+
+Perfil de Cliente y Mascota
+Al hacer clic en un cliente del calendario o listado:
+
+Mostrar tarjeta con:
+
+Nombre del cliente (ej: “María López”).
+
+Teléfono y correo.
+
+Nombre de la mascota (ej: “Luna”).
+
+Foto de la mascota (placeholder).
+
+Al entrar al perfil de la mascota:
+
+Historial clínico con línea de tiempo (ej:
+
+12/09/2025 – Consulta médica (vacunación).
+
+25/08/2025 – Servicio de baño.
+
+02/08/2025 – Desparasitación).
+
+Opciones de agregar nota médica, servicio realizado o próxima cita.
+
+Notificaciones inteligentes (panel lateral o barra superior)
+Ejemplo de alertas que muestra Fido (estilo asistente virtual):
+
+“⚠️ Han pasado 3 semanas desde la última visita de Max (Carlos Díaz).”
+
+“📌 Luna (María López) está próxima a su refuerzo de vacuna.”
+
+Opción de “Marcar como resuelto” o “Enviar recordatorio” directo por WhatsApp/email.
+
+Campañas y reactivación de clientes
+Sección con sugerencias de Fido:
+
+“Estos clientes no han visitado la clínica en más de 30 días. ¿Quieres enviarles un recordatorio?”
+
+Lista con checkboxes:
+
+Pedro García – Rocky (última cita: 1 mes atrás)
+
+Lucía Torres – Bella (última cita: 45 días atrás)
+
+Botón: “Enviar mensajes de reactivación” (simulado, no funcional).
+
+Plantilla de mensaje sugerido por Fido:
+
+“Hola [nombre], notamos que ha pasado tiempo desde la última visita de [mascota]. Queremos recordarte que estamos aquí para su cuidado. ¿Quieres agendar una cita?”
+
+Experiencia de Fido (asistente virtual)
+En la esquina inferior derecha, un widget con Fido (perrito avatar) que sugiere acciones, por ejemplo:
+
+“¡Guau! Hoy tienes 5 citas programadas.”
+
+“¿Quieres que recuerde a los clientes que no confirmaron su asistencia?”
+
+Lo que quiero en el mockup
+
+Simula que ya hay clientes y mascotas cargados, con algunos historiales clínicos.
+
+El calendario debe verse con citas ya agendadas (ejemplos arriba).
+
+El perfil de mascota debe mostrar un historial realista con al menos 3 atenciones pasadas.
+
+En la sección de notificaciones debe aparecer al menos 2 alertas tipo “ha pasado X tiempo desde la última visita”.
+
+En la sección de campañas debe verse una lista de clientes inactivos, con opción de enviar recordatorios.
+
+Fin del prompt. Genera un dashboard visual completo de FidoCool para veterinarias, siguiendo esta estructura y estilo.
