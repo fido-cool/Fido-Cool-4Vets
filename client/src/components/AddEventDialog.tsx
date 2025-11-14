@@ -202,7 +202,7 @@ export function AddEventDialog({ open, onOpenChange, onAdd }: AddEventDialogProp
             <Button type="button" variant="secondary" onClick={() => handleOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" data-testid="button-submit-event" disabled={!mascotaId || mascotas.length === 0}>
+            <Button type="submit" data-testid="button-submit-event">
               Registrar Evento
             </Button>
           </DialogFooter>

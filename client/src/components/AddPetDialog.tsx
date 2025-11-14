@@ -228,7 +228,7 @@ export function AddPetDialog({ open, onOpenChange, onAdd }: AddPetDialogProps) {
             <Button type="button" variant="secondary" onClick={() => handleOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" data-testid="button-submit-pet" disabled={!clienteId || clientes.length === 0}>
+            <Button type="submit" data-testid="button-submit-pet">
               Agregar Mascota
             </Button>
           </DialogFooter>
