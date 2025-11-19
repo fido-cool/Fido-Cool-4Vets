@@ -25,6 +25,14 @@ FidoCool es una plataforma SaaS para veterinarios que permite gestionar clientes
   - Por cada mascota: nombre, especie (perro, gato, ave, roedor, reptil, otro), raza (opcional), fecha de nacimiento (opcional)
   - Botón para agregar múltiples mascotas
   - Validación automática de campos requeridos
+- **Registro de primera visita (opcional)**:
+  - Checkbox disponible solo si hay mascotas válidas registradas
+  - Selección múltiple de mascotas (de las que se están creando) para la visita
+  - Selección múltiple de servicios mediante Popover con checkboxes
+  - Campos de fecha y hora (hora opcional, default 9:00 AM)
+  - Campo de descripción opcional
+  - Creación masiva N×M: seleccionar N mascotas y M servicios crea N×M eventos
+  - Transacción atómica: cliente + mascotas + eventos o rollback completo
 - Asociados automáticamente al veterinario autenticado
 - Búsqueda y filtrado de clientes
 

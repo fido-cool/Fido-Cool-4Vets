@@ -177,6 +177,99 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  /**
+   * Creates a new client with optional pets and optional first visit events in an atomic transaction.
+   * 
+   * CRITICAL: This operation MUST remain transactional. If any insertion fails,
+   * the entire operation will be rolled back.
+   * 
+   * @param veterinarioId - ID of the authenticated veterinarian
+   * @param clienteData - Client information (name, phone, email)
+   * @param mascotasData - Optional array of pets to create for this client
+   * @param primeraVisita - Optional first visit data (pet indices, service types, date, description)
+   * @returns Object containing the created client, pets, and events
+   * @throws Error if any insertion fails (triggers transaction rollback)
+   */
+  async createClienteWithMascotasYEventos(
+    veterinarioId: string,
+    clienteData: { nombre: string; telefono: string; email: string },
+    mascotasData?: Array<{ nombre: string; especie: string; raza?: string; fechaNacimiento?: string }>,
+    primeraVisita?: {
+      mascotaIndices: number[];
+      tipos: string[];
+      fecha: Date;
+      descripcion: string;
+    }
+  ): Promise<{ cliente: Cliente; mascotas: Mascota[]; eventos: Evento[] }> {
+    return await db.transaction(async (tx) => {
+      // Create client
+      const [newCliente] = await tx
+        .insert(clientes)
+        .values({
+          veterinarioId,
+          nombre: clienteData.nombre,
+          telefono: clienteData.telefono,
+          email: clienteData.email,
+        })
+        .returning();
+
+      const createdMascotas: Mascota[] = [];
+
+      // Create pets
+      if (mascotasData && mascotasData.length > 0) {
+        for (const mascotaData of mascotasData) {
+          const [mascota] = await tx
+            .insert(mascotas)
+            .values({
+              clienteId: newCliente.id,
+              nombre: mascotaData.nombre,
+              especie: mascotaData.especie,
+              raza: mascotaData.raza || null,
+              fechaNacimiento: mascotaData.fechaNacimiento ? new Date(mascotaData.fechaNacimiento) : null,
+            })
+            .returning();
+          createdMascotas.push(mascota);
+        }
+      }
+
+      const createdEventos: Evento[] = [];
+
+      // Create events for selected pets and services
+      if (primeraVisita && primeraVisita.mascotaIndices.length > 0 && primeraVisita.tipos.length > 0) {
+        // Validate that all indices are within bounds
+        const maxIndex = createdMascotas.length - 1;
+        const invalidIndices = primeraVisita.mascotaIndices.filter(idx => idx < 0 || idx > maxIndex);
+        
+        if (invalidIndices.length > 0) {
+          throw new Error(`Invalid mascota indices: ${invalidIndices.join(', ')}. Valid range is 0-${maxIndex}.`);
+        }
+        
+        for (const mascotaIndex of primeraVisita.mascotaIndices) {
+          const mascota = createdMascotas[mascotaIndex];
+          
+          for (const tipo of primeraVisita.tipos) {
+            const [evento] = await tx
+              .insert(eventos)
+              .values({
+                mascotaId: mascota.id,
+                tipo,
+                fecha: primeraVisita.fecha,
+                descripcion: primeraVisita.descripcion,
+              })
+              .returning();
+            createdEventos.push(evento);
+          }
+        }
+      }
+
+      return {
+        cliente: newCliente,
+        mascotas: createdMascotas,
+        eventos: createdEventos,
+      };
+    });
+  }
+
   async updateCliente(
     id: number,
     veterinarioId: string,

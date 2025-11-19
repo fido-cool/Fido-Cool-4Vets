@@ -141,13 +141,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const data = insertClienteWithMascotasSchema.parse(req.body);
-      const result = await storage.createClienteWithMascotas(
-        veterinarioId,
-        data.cliente,
-        data.mascotas
-      );
       
-      res.json(result);
+      // Check if primera visita data is provided
+      if (data.primeraVisita && data.primeraVisita.mascotaIndices.length > 0 && data.primeraVisita.tipos.length > 0) {
+        // Parse and construct fecha with optional time
+        const fecha = new Date(data.primeraVisita.fecha);
+        if (data.primeraVisita.hora) {
+          const [hours, minutes] = data.primeraVisita.hora.split(':');
+          fecha.setHours(parseInt(hours), parseInt(minutes));
+        } else {
+          fecha.setHours(9, 0); // Default to 9:00 AM
+        }
+        
+        const result = await storage.createClienteWithMascotasYEventos(
+          veterinarioId,
+          data.cliente,
+          data.mascotas,
+          {
+            mascotaIndices: data.primeraVisita.mascotaIndices,
+            tipos: data.primeraVisita.tipos,
+            fecha,
+            descripcion: data.primeraVisita.descripcion || "",
+          }
+        );
+        
+        return res.json(result);
+      } else {
+        // No primera visita, use the original function
+        const result = await storage.createClienteWithMascotas(
+          veterinarioId,
+          data.cliente,
+          data.mascotas
+        );
+        
+        return res.json({ ...result, eventos: [] });
+      }
     } catch (error: any) {
       console.error("Error creating cliente with mascotas:", error);
       res.status(400).json({ message: error.message || "Failed to create cliente with mascotas" });

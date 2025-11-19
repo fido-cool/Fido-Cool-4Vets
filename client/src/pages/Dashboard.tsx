@@ -82,19 +82,42 @@ export default function Dashboard() {
     mutationFn: async (data: {
       cliente: { nombre: string; telefono: string; email: string };
       mascotas?: Array<{ nombre: string; especie: string; raza?: string; fechaNacimiento?: string }>;
+      primeraVisita?: {
+        mascotaIndices: number[];
+        tipos: string[];
+        fecha: string;
+        hora?: string;
+        descripcion?: string;
+      };
     }) => {
-      await apiRequest("POST", "/api/clientes/with-mascotas", data);
+      return await apiRequest("POST", "/api/clientes/with-mascotas", data);
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/clientes"] });
       queryClient.invalidateQueries({ queryKey: ["/api/mascotas"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      
+      // Also invalidate events if they were created
+      if (data?.eventos && data.eventos.length > 0) {
+        queryClient.invalidateQueries({ queryKey: ["/api/eventos"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/eventos/upcoming"] });
+      }
+      
       const mascotasCount = data?.mascotas?.length || 0;
+      const eventosCount = data?.eventos?.length || 0;
+      
+      let description = "";
+      if (mascotasCount > 0 && eventosCount > 0) {
+        description = `Cliente, ${mascotasCount} mascota(s) y ${eventosCount} evento(s) registrados exitosamente.`;
+      } else if (mascotasCount > 0) {
+        description = `Cliente y ${mascotasCount} mascota(s) registrados exitosamente.`;
+      } else {
+        description = "El cliente ha sido registrado exitosamente.";
+      }
+      
       toast({
         title: "Cliente agregado",
-        description: mascotasCount > 0 
-          ? `Cliente y ${mascotasCount} mascota(s) registrados exitosamente.`
-          : "El cliente ha sido registrado exitosamente.",
+        description,
       });
     },
     onError: () => {

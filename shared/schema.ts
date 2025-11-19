@@ -67,8 +67,7 @@ export const clientes = pgTable("clientes", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-const baseInsertClienteSchema = createInsertSchema(clientes);
-export const insertClienteSchema = baseInsertClienteSchema.omit({
+export const insertClienteSchema = createInsertSchema(clientes).omit({
   id: true,
   createdAt: true,
 });
@@ -92,16 +91,18 @@ export const mascotas = pgTable("mascotas", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-const baseInsertMascotaSchema = createInsertSchema(mascotas);
-export const insertMascotaSchema = baseInsertMascotaSchema.omit({
+export const insertMascotaSchema = createInsertSchema(mascotas).omit({
   id: true,
   createdAt: true,
+  edad: true,
+  fotoUrl: true,
+  notas: true,
 });
 
 export type InsertMascota = z.infer<typeof insertMascotaSchema>;
 export type Mascota = typeof mascotas.$inferSelect;
 
-// Schema for creating a client with optional pets
+// Schema for creating a client with optional pets and optional first visit
 export const insertClienteWithMascotasSchema = z.object({
   cliente: z.object({
     nombre: z.string().min(1, "El nombre es requerido"),
@@ -116,6 +117,13 @@ export const insertClienteWithMascotasSchema = z.object({
       fechaNacimiento: z.string().optional(),
     })
   ).optional(),
+  primeraVisita: z.object({
+    mascotaIndices: z.array(z.number()).min(1, "Debes seleccionar al menos una mascota para la visita"),
+    tipos: z.array(z.string()).min(1, "Debes seleccionar al menos un servicio para la visita"),
+    fecha: z.string().min(1, "La fecha de la visita es requerida"),
+    hora: z.string().optional(),
+    descripcion: z.string().optional(),
+  }).optional(),
 });
 
 export type InsertClienteWithMascotas = z.infer<typeof insertClienteWithMascotasSchema>;
@@ -132,8 +140,7 @@ export const eventos = pgTable("eventos", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-const baseInsertEventoSchema = createInsertSchema(eventos);
-export const insertEventoSchema = baseInsertEventoSchema
+export const insertEventoSchema = createInsertSchema(eventos)
   .omit({
     id: true,
     createdAt: true,
