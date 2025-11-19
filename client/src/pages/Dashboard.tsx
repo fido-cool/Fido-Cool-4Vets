@@ -1,15 +1,23 @@
-import { Users, Heart, Calendar, Clock } from "lucide-react";
+import { Users, Heart, Calendar, Clock, ChevronDown } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { MetricCard } from "@/components/MetricCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { AddClientDialog } from "@/components/AddClientDialog";
 import { AddEventDialog } from "@/components/AddEventDialog";
 import emptyCalendarImage from "@assets/generated_images/Empty_calendar_with_paw_3920e332.png";
 import type { Evento, Mascota } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { isWithinInterval, startOfDay, addDays } from "date-fns";
 
 interface Stats {
   totalClientes: number;
@@ -21,8 +29,25 @@ interface EventoWithMascota extends Evento {
   mascota?: Mascota & { cliente?: { nombre: string } };
 }
 
+type TimePeriod = "hoy" | "semana" | "mes" | "año";
+
+const timePeriodLabels: Record<TimePeriod, string> = {
+  hoy: "Hoy",
+  semana: "Esta Semana",
+  mes: "Este Mes",
+  año: "Este Año",
+};
+
+const timePeriodDays: Record<TimePeriod, number> = {
+  hoy: 0,
+  semana: 7,
+  mes: 30,
+  año: 365,
+};
+
 export default function Dashboard() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>("semana");
   const { toast } = useToast();
 
   const { data: stats, isLoading: statsLoading } = useQuery<Stats>({
@@ -32,6 +57,25 @@ export default function Dashboard() {
   const { data: upcomingEvents = [], isLoading: eventsLoading } = useQuery<EventoWithMascota[]>({
     queryKey: ["/api/eventos/upcoming"],
   });
+
+  const filteredEvents = useMemo(() => {
+    const now = startOfDay(new Date());
+    const days = timePeriodDays[timePeriod];
+    
+    if (timePeriod === "hoy") {
+      const endOfToday = addDays(now, 1);
+      return upcomingEvents.filter(event => {
+        const eventDate = new Date(event.fecha);
+        return isWithinInterval(eventDate, { start: now, end: endOfToday });
+      });
+    } else {
+      const endDate = addDays(now, days);
+      return upcomingEvents.filter(event => {
+        const eventDate = new Date(event.fecha);
+        return isWithinInterval(eventDate, { start: now, end: endDate });
+      });
+    }
+  }, [upcomingEvents, timePeriod]);
 
   const addMutation = useMutation({
     mutationFn: async (event: { mascotaId: number; tipo: string; fecha: string; descripcion: string }) => {
@@ -129,25 +173,61 @@ export default function Dashboard() {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-primary" />
             Próximos Eventos
           </CardTitle>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2" data-testid="button-time-filter">
+                {timePeriodLabels[timePeriod]}
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => setTimePeriod("hoy")}
+                data-testid="filter-hoy"
+              >
+                Hoy
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setTimePeriod("semana")}
+                data-testid="filter-semana"
+              >
+                Esta Semana
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setTimePeriod("mes")}
+                data-testid="filter-mes"
+              >
+                Este Mes
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setTimePeriod("año")}
+                data-testid="filter-año"
+              >
+                Este Año
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </CardHeader>
         <CardContent>
-          {upcomingEvents.length === 0 ? (
+          {filteredEvents.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8">
               <img
                 src={emptyCalendarImage}
                 alt="Sin eventos"
                 className="w-32 h-24 object-contain mb-4 opacity-80"
               />
-              <p className="text-sm text-muted-foreground">No hay eventos programados</p>
+              <p className="text-sm text-muted-foreground">
+                No hay eventos programados para {timePeriodLabels[timePeriod].toLowerCase()}
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
-              {upcomingEvents.map((event) => {
+              {filteredEvents.map((event) => {
                 const eventDate = new Date(event.fecha);
                 return (
                   <div
