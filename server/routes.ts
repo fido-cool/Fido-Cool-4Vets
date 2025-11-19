@@ -115,6 +115,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/clientes/:id/details", isAuthenticated, async (req: any, res) => {
+    try {
+      const veterinarioId = getUserId(req);
+      if (!veterinarioId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const id = parseInt(req.params.id);
+      const details = await storage.getClienteWithDetails(id, veterinarioId);
+      if (!details) {
+        return res.status(404).json({ message: "Cliente not found" });
+      }
+      res.json(details);
+    } catch (error) {
+      console.error("Error fetching cliente details:", error);
+      res.status(500).json({ message: "Failed to fetch cliente details" });
+    }
+  });
+
   app.post("/api/clientes", isAuthenticated, async (req: any, res) => {
     try {
       const veterinarioId = getUserId(req);

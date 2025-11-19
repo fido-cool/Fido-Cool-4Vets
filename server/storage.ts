@@ -13,7 +13,7 @@ import {
   type InsertEvento,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, asc, gte } from "drizzle-orm";
+import { eq, and, desc, asc, gte, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -25,6 +25,11 @@ export interface IStorage {
   // Cliente operations
   getClientes(veterinarioId: string): Promise<Cliente[]>;
   getCliente(id: number, veterinarioId: string): Promise<Cliente | undefined>;
+  getClienteWithDetails(id: number, veterinarioId: string): Promise<{
+    cliente: Cliente;
+    mascotas: Mascota[];
+    eventos: Array<Evento & { mascota: { id: number; nombre: string } }>;
+  } | undefined>;
   createCliente(cliente: InsertCliente): Promise<Cliente>;
   createClienteWithMascotas(
     veterinarioId: string,
@@ -116,6 +121,68 @@ export class DatabaseStorage implements IStorage {
       .from(clientes)
       .where(and(eq(clientes.id, id), eq(clientes.veterinarioId, veterinarioId)));
     return cliente;
+  }
+
+  async getClienteWithDetails(id: number, veterinarioId: string): Promise<{
+    cliente: Cliente;
+    mascotas: Mascota[];
+    eventos: Array<Evento & { mascota: { id: number; nombre: string } }>;
+  } | undefined> {
+    // Get the cliente
+    const [cliente] = await db
+      .select()
+      .from(clientes)
+      .where(and(eq(clientes.id, id), eq(clientes.veterinarioId, veterinarioId)));
+
+    if (!cliente) {
+      return undefined;
+    }
+
+    // Get all pets for this cliente
+    const clienteMascotas = await db
+      .select()
+      .from(mascotas)
+      .where(eq(mascotas.clienteId, id));
+
+    // Get all events for these pets
+    const mascotaIds = clienteMascotas.map(m => m.id);
+    let clienteEventos: Array<Evento & { mascota: { id: number; nombre: string } }> = [];
+    
+    if (mascotaIds.length > 0) {
+      const eventosRaw = await db
+        .select({
+          id: eventos.id,
+          mascotaId: eventos.mascotaId,
+          tipo: eventos.tipo,
+          fecha: eventos.fecha,
+          descripcion: eventos.descripcion,
+          createdAt: eventos.createdAt,
+          mascotaNombre: mascotas.nombre,
+        })
+        .from(eventos)
+        .innerJoin(mascotas, eq(eventos.mascotaId, mascotas.id))
+        .where(inArray(eventos.mascotaId, mascotaIds))
+        .orderBy(desc(eventos.fecha));
+
+      clienteEventos = eventosRaw.map(e => ({
+        id: e.id,
+        mascotaId: e.mascotaId,
+        tipo: e.tipo,
+        fecha: e.fecha,
+        descripcion: e.descripcion,
+        createdAt: e.createdAt,
+        mascota: {
+          id: e.mascotaId,
+          nombre: e.mascotaNombre,
+        },
+      }));
+    }
+
+    return {
+      cliente,
+      mascotas: clienteMascotas,
+      eventos: clienteEventos,
+    };
   }
 
   async createCliente(cliente: InsertCliente): Promise<Cliente> {

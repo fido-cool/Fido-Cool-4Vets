@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { AddClientDialog } from "@/components/AddClientDialog";
+import { ClientDetailDialog } from "@/components/ClientDetailDialog";
 import { EmptyState } from "@/components/EmptyState";
 import emptyClinicImage from "@assets/generated_images/Empty_clinic_waiting_room_118f76ed.png";
 import type { Cliente } from "@shared/schema";
@@ -31,6 +32,7 @@ export default function Clientes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteClientId, setDeleteClientId] = useState<number | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const { toast } = useToast();
 
   const { data: clients = [], isLoading } = useQuery<Cliente[]>({
@@ -165,7 +167,8 @@ export default function Clientes() {
                     {filteredClients.map((client) => (
                       <tr
                         key={client.id}
-                        className="hover-elevate"
+                        className="hover-elevate cursor-pointer"
+                        onClick={() => setSelectedClientId(client.id)}
                         data-testid={`client-row-${client.id}`}
                       >
                         <td className="p-4">
@@ -191,6 +194,7 @@ export default function Clientes() {
                               <Button
                                 variant="ghost"
                                 size="icon"
+                                onClick={(e) => e.stopPropagation()}
                                 data-testid={`button-client-actions-${client.id}`}
                               >
                                 <MoreVertical className="w-4 h-4" />
@@ -198,7 +202,10 @@ export default function Clientes() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
-                                onClick={() => setDeleteClientId(client.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteClientId(client.id);
+                                }}
                                 className="text-destructive"
                                 data-testid={`menu-delete-client-${client.id}`}
                               >
@@ -216,6 +223,12 @@ export default function Clientes() {
           </Card>
         </>
       )}
+
+      <ClientDetailDialog
+        clienteId={selectedClientId}
+        open={selectedClientId !== null}
+        onOpenChange={(open) => !open && setSelectedClientId(null)}
+      />
 
       <AlertDialog open={deleteClientId !== null} onOpenChange={(open) => !open && setDeleteClientId(null)}>
         <AlertDialogContent>
