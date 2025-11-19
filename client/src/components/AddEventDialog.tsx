@@ -157,14 +157,14 @@ export function AddEventDialog({ open, onOpenChange, onAdd }: AddEventDialogProp
       <DialogTrigger asChild>
         <Button data-testid="button-add-event" onClick={() => onOpenChange?.(true)}>
           <Calendar className="w-4 h-4 mr-2" />
-          Agendar Cita
+          Registrar Cita
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Agendar una cita</DialogTitle>
+          <DialogTitle>Registrar visita o Agendar una nueva cita</DialogTitle>
           <DialogDescription>
-            Agenda una próxima cita con un cliente
+            Registra una visita pasada o agenda una cita futura con un cliente
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -270,7 +270,7 @@ export function AddEventDialog({ open, onOpenChange, onAdd }: AddEventDialogProp
               Cancelar
             </Button>
             <Button type="submit" data-testid="button-submit-event">
-              Agendar Cita
+              Registrar Cita
             </Button>
           </DialogFooter>
         </form>

@@ -150,7 +150,7 @@ export default function Calendario() {
           data-testid="button-add-event"
         >
           <Plus className="h-4 w-4" />
-          Nueva Cita
+          Registrar Cita
         </Button>
       </div>
 
