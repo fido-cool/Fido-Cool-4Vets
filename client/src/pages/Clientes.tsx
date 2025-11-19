@@ -228,6 +228,7 @@ export default function Clientes() {
         clienteId={selectedClientId}
         open={selectedClientId !== null}
         onOpenChange={(open) => !open && setSelectedClientId(null)}
+        onDelete={(id) => setDeleteClientId(id)}
       />
 
       <AlertDialog open={deleteClientId !== null} onOpenChange={(open) => !open && setDeleteClientId(null)}>
