@@ -47,6 +47,7 @@ const timePeriodDays: Record<TimePeriod, number> = {
 
 export default function Dashboard() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("semana");
   const { toast } = useToast();
 
@@ -76,6 +77,34 @@ export default function Dashboard() {
       });
     }
   }, [upcomingEvents, timePeriod]);
+
+  const addClientMutation = useMutation({
+    mutationFn: async (data: {
+      cliente: { nombre: string; telefono: string; email: string };
+      mascotas?: Array<{ nombre: string; especie: string; raza?: string; fechaNacimiento?: string }>;
+    }) => {
+      await apiRequest("POST", "/api/clientes/with-mascotas", data);
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clientes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mascotas"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      const mascotasCount = data?.mascotas?.length || 0;
+      toast({
+        title: "Cliente agregado",
+        description: mascotasCount > 0 
+          ? `Cliente y ${mascotasCount} mascota(s) registrados exitosamente.`
+          : "El cliente ha sido registrado exitosamente.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo agregar el cliente. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const addMutation = useMutation({
     mutationFn: async (event: { mascotaId: number; tipo: string; fecha: string; descripcion: string }) => {
@@ -142,7 +171,11 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex flex-wrap gap-4">
-          <AddClientDialog />
+          <AddClientDialog 
+            open={isClientDialogOpen}
+            onOpenChange={setIsClientDialogOpen}
+            onAdd={(data) => addClientMutation.mutate(data)}
+          />
           <AddEventDialog 
             open={isDialogOpen} 
             onOpenChange={setIsDialogOpen} 

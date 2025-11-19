@@ -6,8 +6,11 @@ import { setupLocalAuth } from "./localAuth";
 import type { RequestHandler } from "express";
 import {
   insertClienteSchema,
+  insertClienteWithMascotasSchema,
   insertMascotaSchema,
   insertEventoSchema,
+  type InsertMascota,
+  type InsertEvento,
 } from "@shared/schema";
 
 // Helper para obtener el ID del usuario autenticado (funciona con Replit Auth y local auth)
@@ -126,6 +129,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error creating cliente:", error);
       res.status(400).json({ message: error.message || "Failed to create cliente" });
+    }
+  });
+
+  app.post("/api/clientes/with-mascotas", isAuthenticated, async (req: any, res) => {
+    try {
+      const veterinarioId = getUserId(req);
+      if (!veterinarioId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const data = insertClienteWithMascotasSchema.parse(req.body);
+      const result = await storage.createClienteWithMascotas(
+        veterinarioId,
+        data.cliente,
+        data.mascotas
+      );
+      
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error creating cliente with mascotas:", error);
+      res.status(400).json({ message: error.message || "Failed to create cliente with mascotas" });
     }
   });
 

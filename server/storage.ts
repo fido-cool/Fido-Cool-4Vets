@@ -26,6 +26,11 @@ export interface IStorage {
   getClientes(veterinarioId: string): Promise<Cliente[]>;
   getCliente(id: number, veterinarioId: string): Promise<Cliente | undefined>;
   createCliente(cliente: InsertCliente): Promise<Cliente>;
+  createClienteWithMascotas(
+    veterinarioId: string,
+    clienteData: { nombre: string; telefono: string; email: string },
+    mascotasData?: Array<{ nombre: string; especie: string; raza?: string; fechaNacimiento?: string }>
+  ): Promise<{ cliente: Cliente; mascotas: Mascota[] }>;
   updateCliente(
     id: number,
     veterinarioId: string,
@@ -118,6 +123,45 @@ export class DatabaseStorage implements IStorage {
     return newCliente;
   }
 
+  async createClienteWithMascotas(
+    veterinarioId: string,
+    clienteData: { nombre: string; telefono: string; email: string },
+    mascotasData?: Array<{ nombre: string; especie: string; raza?: string; fechaNacimiento?: string }>
+  ): Promise<{ cliente: Cliente; mascotas: Mascota[] }> {
+    const [newCliente] = await db
+      .insert(clientes)
+      .values({
+        veterinarioId,
+        nombre: clienteData.nombre,
+        telefono: clienteData.telefono,
+        email: clienteData.email,
+      })
+      .returning();
+
+    const createdMascotas: Mascota[] = [];
+
+    if (mascotasData && mascotasData.length > 0) {
+      for (const mascotaData of mascotasData) {
+        const [mascota] = await db
+          .insert(mascotas)
+          .values({
+            clienteId: newCliente.id,
+            nombre: mascotaData.nombre,
+            especie: mascotaData.especie,
+            raza: mascotaData.raza || null,
+            fechaNacimiento: mascotaData.fechaNacimiento ? new Date(mascotaData.fechaNacimiento) : null,
+          })
+          .returning();
+        createdMascotas.push(mascota);
+      }
+    }
+
+    return {
+      cliente: newCliente,
+      mascotas: createdMascotas,
+    };
+  }
+
   async updateCliente(
     id: number,
     veterinarioId: string,
@@ -147,7 +191,9 @@ export class DatabaseStorage implements IStorage {
         nombre: mascotas.nombre,
         especie: mascotas.especie,
         raza: mascotas.raza,
+        fechaNacimiento: mascotas.fechaNacimiento,
         edad: mascotas.edad,
+        fotoUrl: mascotas.fotoUrl,
         notas: mascotas.notas,
         createdAt: mascotas.createdAt,
         cliente: {
@@ -181,7 +227,9 @@ export class DatabaseStorage implements IStorage {
         nombre: mascotas.nombre,
         especie: mascotas.especie,
         raza: mascotas.raza,
+        fechaNacimiento: mascotas.fechaNacimiento,
         edad: mascotas.edad,
+        fotoUrl: mascotas.fotoUrl,
         notas: mascotas.notas,
         createdAt: mascotas.createdAt,
       })

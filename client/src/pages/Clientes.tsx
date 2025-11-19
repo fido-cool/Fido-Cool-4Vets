@@ -38,15 +38,22 @@ export default function Clientes() {
   });
 
   const addMutation = useMutation({
-    mutationFn: async (client: { nombre: string; telefono: string; email: string }) => {
-      await apiRequest("POST", "/api/clientes", client);
+    mutationFn: async (data: {
+      cliente: { nombre: string; telefono: string; email: string };
+      mascotas?: Array<{ nombre: string; especie: string; raza?: string; fechaNacimiento?: string }>;
+    }) => {
+      await apiRequest("POST", "/api/clientes/with-mascotas", data);
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/clientes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mascotas"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      const mascotasCount = data?.mascotas?.length || 0;
       toast({
         title: "Cliente agregado",
-        description: "El cliente ha sido registrado exitosamente.",
+        description: mascotasCount > 0 
+          ? `Cliente y ${mascotasCount} mascota(s) registrados exitosamente.`
+          : "El cliente ha sido registrado exitosamente.",
       });
     },
     onError: () => {

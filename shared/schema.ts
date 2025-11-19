@@ -85,6 +85,7 @@ export const mascotas = pgTable("mascotas", {
   nombre: varchar("nombre", { length: 255 }).notNull(),
   especie: varchar("especie", { length: 100 }).notNull(),
   raza: varchar("raza", { length: 255 }),
+  fechaNacimiento: timestamp("fecha_nacimiento"),
   edad: varchar("edad", { length: 50 }),
   fotoUrl: varchar("foto_url"),
   notas: text("notas"),
@@ -99,6 +100,25 @@ export const insertMascotaSchema = baseInsertMascotaSchema.omit({
 
 export type InsertMascota = z.infer<typeof insertMascotaSchema>;
 export type Mascota = typeof mascotas.$inferSelect;
+
+// Schema for creating a client with optional pets
+export const insertClienteWithMascotasSchema = z.object({
+  cliente: z.object({
+    nombre: z.string().min(1, "El nombre es requerido"),
+    telefono: z.string().min(1, "El teléfono es requerido"),
+    email: z.string().email("Email inválido"),
+  }),
+  mascotas: z.array(
+    z.object({
+      nombre: z.string().min(1, "El nombre es requerido"),
+      especie: z.string().min(1, "La especie es requerida"),
+      raza: z.string().optional(),
+      fechaNacimiento: z.string().optional(),
+    })
+  ).optional(),
+});
+
+export type InsertClienteWithMascotas = z.infer<typeof insertClienteWithMascotasSchema>;
 
 // Eventos table
 export const eventos = pgTable("eventos", {

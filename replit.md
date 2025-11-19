@@ -20,16 +20,28 @@ FidoCool es una plataforma SaaS para veterinarios que permite gestionar clientes
 ### Gestión de Clientes
 - CRUD completo de clientes (dueños de mascotas)
 - Campos: nombre, teléfono, correo electrónico
+- **Registro de mascotas al crear cliente (opcional)**:
+  - Opción para agregar una o más mascotas directamente al crear el cliente
+  - Por cada mascota: nombre, especie (perro, gato, ave, roedor, reptil, otro), raza (opcional), fecha de nacimiento (opcional)
+  - Botón para agregar múltiples mascotas
+  - Validación automática de campos requeridos
 - Asociados automáticamente al veterinario autenticado
 - Búsqueda y filtrado de clientes
 
 ### Gestión de Mascotas
 - CRUD completo de mascotas asociadas a clientes
-- Campos: nombre, especie, raza, edad, notas, foto (placeholder)
+- Campos: nombre, especie, raza, fecha de nacimiento, edad, notas, foto (placeholder)
 - Relación con el dueño (cliente)
 - Visualización en tarjetas con información detallada
+- **Registro masivo**: Posibilidad de crear múltiples mascotas al registrar un cliente
 
 ### Gestión de Eventos
+- **Agenda de Citas Mejorada**:
+  - Flujo de reserva: primero seleccionar dueño, luego mascota (filtrada por dueño)
+  - Campos separados de fecha y hora (hora opcional, default 9:00 AM)
+  - Nuevos tipos de servicio:
+    - **Servicios de Estética**: Baño, Baño y Corte
+    - **Servicios Médicos**: Chequeo Médico, Vacunación, Cirugía, Otro
 - Registro de visitas pasadas
 - Programación de visitas futuras
 - Tipos de eventos con colores distintivos:
@@ -37,7 +49,8 @@ FidoCool es una plataforma SaaS para veterinarios que permite gestionar clientes
   - Baño y Estética (púrpura) - Cirugía (rojo)
   - Revisión (naranja) - Desparasitación (teal)
   - Urgencia (rojo oscuro) - Otro (gris)
-- Filtros por tipo de evento (pasados vs próximos)
+- Guardado automático en backend con relaciones completas (mascota → cliente)
+- Actualización en tiempo real del calendario y estadísticas
 
 ### Calendario Visual
 - Vista de calendario estilo Google Calendar/Outlook
@@ -52,8 +65,13 @@ FidoCool es una plataforma SaaS para veterinarios que permite gestionar clientes
   - Total de clientes registrados
   - Total de mascotas
   - Número de eventos próximos
-- Lista de próximos eventos ordenados por fecha
-- Acciones rápidas para agregar clientes, mascotas y eventos
+- **Filtro de Período de Tiempo** para próximos eventos:
+  - Hoy: Eventos del mismo día
+  - Esta Semana: Eventos desde hoy hasta 7 días después (predeterminado)
+  - Este Mes: Eventos desde hoy hasta 30 días después
+  - Este Año: Eventos desde hoy hasta 365 días después
+- Lista de próximos eventos ordenados por fecha con filtros personalizables
+- Acciones rápidas para agregar clientes con sus mascotas y agendar eventos
 
 ### Notificaciones Inteligentes
 - Sistema de alertas automatizadas generadas por Fido
@@ -140,6 +158,7 @@ FidoCool es una plataforma SaaS para veterinarios que permite gestionar clientes
 - nombre: nombre de la mascota
 - especie: perro, gato, ave, roedor, reptil, otro
 - raza: raza de la mascota (opcional)
+- fechaNacimiento: fecha de nacimiento de la mascota (opcional)
 - edad: edad en formato texto
 - fotoUrl: URL de foto de la mascota (opcional)
 - notas: observaciones médicas
@@ -181,6 +200,7 @@ El sistema incluye tipos de servicio predefinidos con colores asociados:
 - `GET /api/clientes` - Listar todos los clientes del veterinario
 - `GET /api/clientes/:id` - Obtener un cliente específico
 - `POST /api/clientes` - Crear nuevo cliente
+- `POST /api/clientes/with-mascotas` - Crear cliente con mascotas (opcional)
 - `PATCH /api/clientes/:id` - Actualizar cliente
 - `DELETE /api/clientes/:id` - Eliminar cliente
 
