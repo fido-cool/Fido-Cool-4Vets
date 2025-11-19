@@ -1,5 +1,5 @@
 import { Users, Heart, Calendar, Clock } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { MetricCard } from "@/components/MetricCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,9 @@ import { AddClientDialog } from "@/components/AddClientDialog";
 import { AddEventDialog } from "@/components/AddEventDialog";
 import emptyCalendarImage from "@assets/generated_images/Empty_calendar_with_paw_3920e332.png";
 import type { Evento, Mascota } from "@shared/schema";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 interface Stats {
   totalClientes: number;
@@ -19,12 +22,37 @@ interface EventoWithMascota extends Evento {
 }
 
 export default function Dashboard() {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { toast } = useToast();
+
   const { data: stats, isLoading: statsLoading } = useQuery<Stats>({
     queryKey: ["/api/stats"],
   });
 
   const { data: upcomingEvents = [], isLoading: eventsLoading } = useQuery<EventoWithMascota[]>({
     queryKey: ["/api/eventos/upcoming"],
+  });
+
+  const addMutation = useMutation({
+    mutationFn: async (event: { mascotaId: number; tipo: string; fecha: string; descripcion: string }) => {
+      await apiRequest("POST", "/api/eventos", event);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/eventos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/eventos/upcoming"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      toast({
+        title: "Cita agendada",
+        description: "La cita ha sido agendada exitosamente.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo agendar la cita. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    },
   });
 
   const isLoading = statsLoading || eventsLoading;
@@ -71,7 +99,11 @@ export default function Dashboard() {
         </div>
         <div className="flex flex-wrap gap-4">
           <AddClientDialog />
-          <AddEventDialog />
+          <AddEventDialog 
+            open={isDialogOpen} 
+            onOpenChange={setIsDialogOpen} 
+            onAdd={(event) => addMutation.mutate(event)} 
+          />
         </div>
       </div>
 

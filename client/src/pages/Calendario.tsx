@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Calendar, dateFnsLocalizer, View } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { es } from "date-fns/locale";
@@ -9,6 +9,8 @@ import { Card } from "@/components/ui/card";
 import { AddEventDialog } from "@/components/AddEventDialog";
 import { serviceTypes } from "@shared/schema";
 import type { Evento, Mascota, Cliente } from "@shared/schema";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
 const locales = {
@@ -50,9 +52,32 @@ export default function Calendario() {
   const [view, setView] = useState<View>("week");
   const [date, setDate] = useState(new Date());
   const [showAddEvent, setShowAddEvent] = useState(false);
+  const { toast } = useToast();
 
   const { data: eventos, isLoading } = useQuery<EventoConDetalles[]>({
     queryKey: ["/api/eventos"],
+  });
+
+  const addMutation = useMutation({
+    mutationFn: async (event: { mascotaId: number; tipo: string; fecha: string; descripcion: string }) => {
+      await apiRequest("POST", "/api/eventos", event);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/eventos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/eventos/upcoming"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      toast({
+        title: "Cita agendada",
+        description: "La cita ha sido agendada exitosamente.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo agendar la cita. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    },
   });
 
   const calendarEvents: CalendarEvent[] =
@@ -181,6 +206,7 @@ export default function Calendario() {
       <AddEventDialog
         open={showAddEvent}
         onOpenChange={setShowAddEvent}
+        onAdd={(event) => addMutation.mutate(event)}
       />
     </div>
   );
