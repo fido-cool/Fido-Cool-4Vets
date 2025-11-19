@@ -164,13 +164,11 @@ export type InsertMultipleEventos = z.infer<typeof insertMultipleEventosSchema>;
 
 // Service types with associated colors
 export const serviceTypes = {
-  consulta: { label: "Consulta General", color: "#3b82f6" }, // blue
+  bano: { label: "Baño", color: "#8b5cf6" }, // purple
+  bano_corte: { label: "Baño y Corte", color: "#a855f7" }, // lighter purple
+  chequeo: { label: "Chequeo Médico", color: "#3b82f6" }, // blue
   vacunacion: { label: "Vacunación", color: "#10b981" }, // green
-  bano: { label: "Baño y Estética", color: "#8b5cf6" }, // purple
   cirugia: { label: "Cirugía", color: "#ef4444" }, // red
-  revision: { label: "Revisión", color: "#f59e0b" }, // orange
-  desparasitacion: { label: "Desparasitación", color: "#14b8a6" }, // teal
-  urgencia: { label: "Urgencia", color: "#dc2626" }, // dark red
   otro: { label: "Otro", color: "#6b7280" }, // gray
 } as const;
 
