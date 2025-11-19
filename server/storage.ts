@@ -123,43 +123,58 @@ export class DatabaseStorage implements IStorage {
     return newCliente;
   }
 
+  /**
+   * Creates a new client with optional pets in an atomic transaction.
+   * 
+   * CRITICAL: This operation MUST remain transactional. If any pet insertion fails,
+   * the entire operation (including the client) will be rolled back to prevent
+   * orphaned client records without their associated pets.
+   * 
+   * @param veterinarioId - ID of the authenticated veterinarian
+   * @param clienteData - Client information (name, phone, email)
+   * @param mascotasData - Optional array of pets to create for this client
+   * @returns Object containing the created client and array of created pets
+   * @throws Error if any insertion fails (triggers transaction rollback)
+   */
   async createClienteWithMascotas(
     veterinarioId: string,
     clienteData: { nombre: string; telefono: string; email: string },
     mascotasData?: Array<{ nombre: string; especie: string; raza?: string; fechaNacimiento?: string }>
   ): Promise<{ cliente: Cliente; mascotas: Mascota[] }> {
-    const [newCliente] = await db
-      .insert(clientes)
-      .values({
-        veterinarioId,
-        nombre: clienteData.nombre,
-        telefono: clienteData.telefono,
-        email: clienteData.email,
-      })
-      .returning();
+    return await db.transaction(async (tx) => {
+      const [newCliente] = await tx
+        .insert(clientes)
+        .values({
+          veterinarioId,
+          nombre: clienteData.nombre,
+          telefono: clienteData.telefono,
+          email: clienteData.email,
+        })
+        .returning();
 
-    const createdMascotas: Mascota[] = [];
+      const createdMascotas: Mascota[] = [];
 
-    if (mascotasData && mascotasData.length > 0) {
-      for (const mascotaData of mascotasData) {
-        const [mascota] = await db
-          .insert(mascotas)
-          .values({
-            clienteId: newCliente.id,
-            nombre: mascotaData.nombre,
-            especie: mascotaData.especie,
-            raza: mascotaData.raza || null,
-            fechaNacimiento: mascotaData.fechaNacimiento ? new Date(mascotaData.fechaNacimiento) : null,
-          })
-          .returning();
-        createdMascotas.push(mascota);
+      if (mascotasData && mascotasData.length > 0) {
+        for (const mascotaData of mascotasData) {
+          const [mascota] = await tx
+            .insert(mascotas)
+            .values({
+              clienteId: newCliente.id,
+              nombre: mascotaData.nombre,
+              especie: mascotaData.especie,
+              raza: mascotaData.raza || null,
+              fechaNacimiento: mascotaData.fechaNacimiento ? new Date(mascotaData.fechaNacimiento) : null,
+            })
+            .returning();
+          createdMascotas.push(mascota);
+        }
       }
-    }
 
-    return {
-      cliente: newCliente,
-      mascotas: createdMascotas,
-    };
+      return {
+        cliente: newCliente,
+        mascotas: createdMascotas,
+      };
+    });
   }
 
   async updateCliente(
