@@ -4,7 +4,6 @@ import { MetricCard } from "@/components/MetricCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AddClientDialog } from "@/components/AddClientDialog";
-import { AddPetDialog } from "@/components/AddPetDialog";
 import { AddEventDialog } from "@/components/AddEventDialog";
 import emptyCalendarImage from "@assets/generated_images/Empty_calendar_with_paw_3920e332.png";
 import type { Evento, Mascota } from "@shared/schema";
@@ -72,7 +71,6 @@ export default function Dashboard() {
         </div>
         <div className="flex flex-wrap gap-4">
           <AddClientDialog />
-          <AddPetDialog />
           <AddEventDialog />
         </div>
       </div>

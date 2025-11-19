@@ -125,7 +125,7 @@ export function AddEventDialog({ open, onOpenChange, onAdd }: AddEventDialogProp
       <DialogTrigger asChild>
         <Button data-testid="button-add-event" onClick={() => onOpenChange?.(true)}>
           <Calendar className="w-4 h-4 mr-2" />
-          Nuevo Evento
+          Agendar Cita
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
