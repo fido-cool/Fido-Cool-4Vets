@@ -107,22 +107,23 @@ export default function Dashboard() {
   });
 
   const addMutation = useMutation({
-    mutationFn: async (event: { mascotaId: number; tipo: string; fecha: string; descripcion: string }) => {
-      await apiRequest("POST", "/api/eventos", event);
+    mutationFn: async (events: { mascotaIds: number[]; tipos: string[]; fecha: string; descripcion: string }) => {
+      return await apiRequest("POST", "/api/eventos", events);
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/eventos"] });
       queryClient.invalidateQueries({ queryKey: ["/api/eventos/upcoming"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      const count = data?.count || 0;
       toast({
-        title: "Cita agendada",
-        description: "La cita ha sido agendada exitosamente.",
+        title: "Citas agendadas",
+        description: `Se ${count === 1 ? 'ha agendado' : 'han agendado'} ${count} cita${count > 1 ? 's' : ''} exitosamente.`,
       });
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "No se pudo agendar la cita. Inténtalo de nuevo.",
+        description: "No se pudo agendar la(s) cita(s). Inténtalo de nuevo.",
         variant: "destructive",
       });
     },

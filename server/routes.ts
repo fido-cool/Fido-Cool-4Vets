@@ -9,6 +9,7 @@ import {
   insertClienteWithMascotasSchema,
   insertMascotaSchema,
   insertEventoSchema,
+  insertMultipleEventosSchema,
   type InsertMascota,
   type InsertEvento,
 } from "@shared/schema";
@@ -319,18 +320,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Unauthorized" });
       }
       
-      const data = insertEventoSchema.parse(req.body) as InsertEvento;
+      const data = insertMultipleEventosSchema.parse(req.body);
       
-      const mascota = await storage.getMascota(data.mascotaId, veterinarioId);
-      if (!mascota) {
-        return res.status(403).json({ message: "La mascota no pertenece a este veterinario" });
+      // Verify all pets belong to this veterinarian
+      for (const mascotaId of data.mascotaIds) {
+        const mascota = await storage.getMascota(mascotaId, veterinarioId);
+        if (!mascota) {
+          return res.status(403).json({ 
+            message: `La mascota con ID ${mascotaId} no pertenece a este veterinario` 
+          });
+        }
       }
       
-      const evento = await storage.createEvento(data);
-      res.json(evento);
+      // Create all events (one per pet x service combination)
+      const fecha = new Date(data.fecha);
+      const eventos = await storage.createMultipleEventos(
+        data.mascotaIds,
+        data.tipos,
+        fecha,
+        data.descripcion
+      );
+      
+      res.json({ 
+        count: eventos.length,
+        eventos 
+      });
     } catch (error: any) {
-      console.error("Error creating evento:", error);
-      res.status(400).json({ message: error.message || "Failed to create evento" });
+      console.error("Error creating eventos:", error);
+      res.status(400).json({ message: error.message || "Failed to create eventos" });
     }
   });
 

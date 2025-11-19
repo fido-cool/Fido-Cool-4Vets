@@ -410,6 +410,47 @@ export class DatabaseStorage implements IStorage {
     return newEvento;
   }
 
+  /**
+   * Creates multiple events in an atomic transaction (one per pet x service combination).
+   * 
+   * CRITICAL: This operation MUST remain transactional. If any event insertion fails,
+   * the entire operation will be rolled back to prevent partial event creation.
+   * 
+   * @param mascotaIds - Array of pet IDs
+   * @param tipos - Array of service types
+   * @param fecha - Event date/time
+   * @param descripcion - Optional description
+   * @returns Array of created events
+   * @throws Error if any insertion fails (triggers transaction rollback)
+   */
+  async createMultipleEventos(
+    mascotaIds: number[],
+    tipos: string[],
+    fecha: Date,
+    descripcion?: string
+  ): Promise<Evento[]> {
+    return await db.transaction(async (tx) => {
+      const createdEventos: Evento[] = [];
+      
+      for (const mascotaId of mascotaIds) {
+        for (const tipo of tipos) {
+          const [evento] = await tx
+            .insert(eventos)
+            .values({
+              mascotaId,
+              tipo,
+              fecha,
+              descripcion: descripcion || "Cita programada",
+            })
+            .returning();
+          createdEventos.push(evento);
+        }
+      }
+      
+      return createdEventos;
+    });
+  }
+
   async deleteEvento(id: number, veterinarioId: string): Promise<boolean> {
     const result = await db
       .delete(eventos)

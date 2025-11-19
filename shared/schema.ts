@@ -145,6 +145,16 @@ export const insertEventoSchema = baseInsertEventoSchema
 export type InsertEvento = z.infer<typeof insertEventoSchema>;
 export type Evento = typeof eventos.$inferSelect;
 
+// Schema for creating multiple events (one per pet x service combination)
+export const insertMultipleEventosSchema = z.object({
+  mascotaIds: z.array(z.number()).min(1, "Debes seleccionar al menos una mascota"),
+  tipos: z.array(z.string()).min(1, "Debes seleccionar al menos un tipo de servicio"),
+  fecha: z.string(),
+  descripcion: z.string().optional(),
+});
+
+export type InsertMultipleEventos = z.infer<typeof insertMultipleEventosSchema>;
+
 // Service types with associated colors
 export const serviceTypes = {
   consulta: { label: "Consulta General", color: "#3b82f6" }, // blue

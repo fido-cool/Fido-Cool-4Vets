@@ -36,9 +36,13 @@ FidoCool es una plataforma SaaS para veterinarios que permite gestionar clientes
 - **Registro masivo**: Posibilidad de crear múltiples mascotas al registrar un cliente
 
 ### Gestión de Eventos
-- **Agenda de Citas Mejorada**:
-  - Flujo de reserva: primero seleccionar dueño, luego mascota (filtrada por dueño)
+- **Agenda de Citas Mejorada con Selección Múltiple**:
+  - **Selección Múltiple de Mascotas**: Permite seleccionar varias mascotas del mismo dueño simultáneamente
+  - **Selección Múltiple de Servicios**: Permite seleccionar múltiples tipos de servicio (Baño, Vacunación, etc.)
+  - **Creación Masiva de Eventos**: Crea automáticamente N×M eventos (N mascotas × M servicios) en una sola transacción atómica
+  - Flujo de reserva: primero seleccionar dueño, luego mascotas (filtradas por dueño), y servicios
   - Campos separados de fecha y hora (hora opcional, default 9:00 AM)
+  - Estados de loading inteligentes: muestra "Cargando clientes..." y "Cargando mascotas..." mientras las queries se ejecutan
   - Nuevos tipos de servicio:
     - **Servicios de Estética**: Baño, Baño y Corte
     - **Servicios Médicos**: Chequeo Médico, Vacunación, Cirugía, Otro
@@ -51,6 +55,7 @@ FidoCool es una plataforma SaaS para veterinarios que permite gestionar clientes
   - Urgencia (rojo oscuro) - Otro (gris)
 - Guardado automático en backend con relaciones completas (mascota → cliente)
 - Actualización en tiempo real del calendario y estadísticas
+- **Transacciones Atómicas**: Si falla la creación de cualquier evento, se hace rollback completo
 
 ### Calendario Visual
 - Vista de calendario estilo Google Calendar/Outlook

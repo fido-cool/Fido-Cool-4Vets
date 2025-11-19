@@ -19,8 +19,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "lucide-react";
+import { Calendar, ChevronDown, X } from "lucide-react";
 import type { Mascota, Cliente } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
@@ -31,9 +38,9 @@ interface MascotaWithCliente extends Mascota {
 interface AddEventDialogProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  onAdd?: (event: {
-    mascotaId: number;
-    tipo: string;
+  onAdd?: (events: {
+    mascotaIds: number[];
+    tipos: string[];
     fecha: string;
     descripcion: string;
   }) => void;
@@ -41,18 +48,20 @@ interface AddEventDialogProps {
 
 export function AddEventDialog({ open, onOpenChange, onAdd }: AddEventDialogProps) {
   const [clienteId, setClienteId] = useState("");
-  const [mascotaId, setMascotaId] = useState("");
-  const [tipo, setTipo] = useState("");
+  const [mascotaIds, setMascotaIds] = useState<number[]>([]);
+  const [tipos, setTipos] = useState<string[]>([]);
   const [fechaSoloFecha, setFechaSoloFecha] = useState("");
   const [hora, setHora] = useState("");
   const [descripcion, setDescripcion] = useState("");
+  const [mascotaPopoverOpen, setMascotaPopoverOpen] = useState(false);
+  const [tipoPopoverOpen, setTipoPopoverOpen] = useState(false);
   const { toast } = useToast();
 
-  const { data: clientes = [] } = useQuery<Cliente[]>({
+  const { data: clientes = [], isLoading: isLoadingClientes } = useQuery<Cliente[]>({
     queryKey: ["/api/clientes"],
   });
 
-  const { data: mascotas = [] } = useQuery<MascotaWithCliente[]>({
+  const { data: mascotas = [], isLoading: isLoadingMascotas } = useQuery<MascotaWithCliente[]>({
     queryKey: ["/api/mascotas"],
   });
 
@@ -61,9 +70,42 @@ export function AddEventDialog({ open, onOpenChange, onAdd }: AddEventDialogProp
     return mascotas.filter(m => m.clienteId === parseInt(clienteId));
   }, [clienteId, mascotas]);
 
+  const tiposDeServicio = [
+    { value: "bano", label: "Baño" },
+    { value: "bano_corte", label: "Baño y Corte" },
+    { value: "chequeo", label: "Chequeo Médico" },
+    { value: "vacunacion", label: "Vacunación" },
+    { value: "cirugia", label: "Cirugía" },
+    { value: "otro", label: "Otro" },
+  ];
+
   const handleClienteChange = (value: string) => {
     setClienteId(value);
-    setMascotaId("");
+    setMascotaIds([]);
+  };
+
+  const toggleMascota = (mascotaId: number) => {
+    setMascotaIds(prev => 
+      prev.includes(mascotaId) 
+        ? prev.filter(id => id !== mascotaId)
+        : [...prev, mascotaId]
+    );
+  };
+
+  const toggleTipo = (tipo: string) => {
+    setTipos(prev => 
+      prev.includes(tipo)
+        ? prev.filter(t => t !== tipo)
+        : [...prev, tipo]
+    );
+  };
+
+  const removeMascota = (mascotaId: number) => {
+    setMascotaIds(prev => prev.filter(id => id !== mascotaId));
+  };
+
+  const removeTipo = (tipo: string) => {
+    setTipos(prev => prev.filter(t => t !== tipo));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -78,19 +120,19 @@ export function AddEventDialog({ open, onOpenChange, onAdd }: AddEventDialogProp
       return;
     }
     
-    if (!mascotaId || mascotaId.trim() === "") {
+    if (mascotaIds.length === 0) {
       toast({
         title: "Error de validación",
-        description: "Debes seleccionar una mascota.",
+        description: "Debes seleccionar al menos una mascota.",
         variant: "destructive",
       });
       return;
     }
     
-    if (!tipo || tipo.trim() === "") {
+    if (tipos.length === 0) {
       toast({
         title: "Error de validación",
-        description: "Debes seleccionar el tipo de servicio.",
+        description: "Debes seleccionar al menos un tipo de servicio.",
         variant: "destructive",
       });
       return;
@@ -124,15 +166,15 @@ export function AddEventDialog({ open, onOpenChange, onAdd }: AddEventDialogProp
     
     if (onAdd) {
       onAdd({ 
-        mascotaId: parseInt(mascotaId), 
-        tipo, 
+        mascotaIds,
+        tipos,
         fecha: parsedDate.toISOString(), 
         descripcion: descripcion.trim() || "Cita programada" 
       });
       
       setClienteId("");
-      setMascotaId("");
-      setTipo("");
+      setMascotaIds([]);
+      setTipos([]);
       setFechaSoloFecha("");
       setHora("");
       setDescripcion("");
@@ -143,11 +185,13 @@ export function AddEventDialog({ open, onOpenChange, onAdd }: AddEventDialogProp
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
       setClienteId("");
-      setMascotaId("");
-      setTipo("");
+      setMascotaIds([]);
+      setTipos([]);
       setFechaSoloFecha("");
       setHora("");
       setDescripcion("");
+      setMascotaPopoverOpen(false);
+      setTipoPopoverOpen(false);
     }
     onOpenChange?.(newOpen);
   };
@@ -176,7 +220,11 @@ export function AddEventDialog({ open, onOpenChange, onAdd }: AddEventDialogProp
                   <SelectValue placeholder="Selecciona un dueño" />
                 </SelectTrigger>
                 <SelectContent>
-                  {clientes.length === 0 ? (
+                  {isLoadingClientes ? (
+                    <div className="p-2 text-sm text-muted-foreground">
+                      Cargando clientes...
+                    </div>
+                  ) : clientes.length === 0 ? (
                     <div className="p-2 text-sm text-muted-foreground">
                       No hay clientes registrados
                     </div>
@@ -191,25 +239,76 @@ export function AddEventDialog({ open, onOpenChange, onAdd }: AddEventDialogProp
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="mascota">Mascota</Label>
-              <Select value={mascotaId} onValueChange={setMascotaId} required disabled={!clienteId}>
-                <SelectTrigger id="mascota" data-testid="select-event-pet">
-                  <SelectValue placeholder="Selecciona una mascota" />
-                </SelectTrigger>
-                <SelectContent>
-                  {mascotasDelCliente.length === 0 ? (
-                    <div className="p-2 text-sm text-muted-foreground">
-                      {clienteId ? "Este cliente no tiene mascotas registradas" : "Selecciona primero un dueño"}
-                    </div>
-                  ) : (
-                    mascotasDelCliente.map((mascota) => (
-                      <SelectItem key={mascota.id} value={mascota.id.toString()}>
+              <Label htmlFor="mascota">Mascotas (selección múltiple)</Label>
+              <Popover open={mascotaPopoverOpen} onOpenChange={setMascotaPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    disabled={!clienteId}
+                    className="w-full justify-between"
+                    data-testid="select-event-pets"
+                  >
+                    <span className="truncate">
+                      {mascotaIds.length === 0
+                        ? "Selecciona mascotas"
+                        : `${mascotaIds.length} mascota${mascotaIds.length > 1 ? 's' : ''} seleccionada${mascotaIds.length > 1 ? 's' : ''}`}
+                    </span>
+                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start">
+                  <div className="max-h-64 overflow-y-auto p-2">
+                    {isLoadingMascotas && clienteId ? (
+                      <div className="p-2 text-sm text-muted-foreground text-center">
+                        Cargando mascotas...
+                      </div>
+                    ) : mascotasDelCliente.length === 0 ? (
+                      <div className="p-2 text-sm text-muted-foreground text-center">
+                        {clienteId ? "Este cliente no tiene mascotas registradas" : "Selecciona primero un dueño"}
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        {mascotasDelCliente.map((mascota) => (
+                          <div
+                            key={mascota.id}
+                            className="flex items-center space-x-2 rounded-sm px-2 py-1.5 hover-elevate"
+                            data-testid={`checkbox-pet-${mascota.id}`}
+                          >
+                            <Checkbox
+                              checked={mascotaIds.includes(mascota.id)}
+                              onCheckedChange={() => toggleMascota(mascota.id)}
+                            />
+                            <label
+                              className="flex-1 cursor-pointer text-sm"
+                              onClick={() => toggleMascota(mascota.id)}
+                            >
+                              {mascota.nombre}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              {mascotaIds.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2" data-testid="selected-pets-badges">
+                  {mascotaIds.map((id) => {
+                    const mascota = mascotasDelCliente.find(m => m.id === id);
+                    return mascota ? (
+                      <Badge key={id} variant="secondary" className="gap-1">
                         {mascota.nombre}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+                        <X
+                          className="h-3 w-3 cursor-pointer"
+                          onClick={() => removeMascota(id)}
+                          data-testid={`remove-pet-${id}`}
+                        />
+                      </Badge>
+                    ) : null;
+                  })}
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -237,20 +336,65 @@ export function AddEventDialog({ open, onOpenChange, onAdd }: AddEventDialogProp
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="tipo">Servicio</Label>
-              <Select value={tipo} onValueChange={setTipo} required>
-                <SelectTrigger id="tipo" data-testid="select-event-type">
-                  <SelectValue placeholder="Tipo de servicio" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="bano">Baño</SelectItem>
-                  <SelectItem value="bano_corte">Baño y Corte</SelectItem>
-                  <SelectItem value="chequeo">Chequeo Médico</SelectItem>
-                  <SelectItem value="vacunacion">Vacunación</SelectItem>
-                  <SelectItem value="cirugia">Cirugía</SelectItem>
-                  <SelectItem value="otro">Otro</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="tipo">Servicios (selección múltiple)</Label>
+              <Popover open={tipoPopoverOpen} onOpenChange={setTipoPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-full justify-between"
+                    data-testid="select-event-types"
+                  >
+                    <span className="truncate">
+                      {tipos.length === 0
+                        ? "Selecciona servicios"
+                        : `${tipos.length} servicio${tipos.length > 1 ? 's' : ''} seleccionado${tipos.length > 1 ? 's' : ''}`}
+                    </span>
+                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start">
+                  <div className="max-h-64 overflow-y-auto p-2">
+                    <div className="space-y-1">
+                      {tiposDeServicio.map((servicio) => (
+                        <div
+                          key={servicio.value}
+                          className="flex items-center space-x-2 rounded-sm px-2 py-1.5 hover-elevate"
+                          data-testid={`checkbox-service-${servicio.value}`}
+                        >
+                          <Checkbox
+                            checked={tipos.includes(servicio.value)}
+                            onCheckedChange={() => toggleTipo(servicio.value)}
+                          />
+                          <label
+                            className="flex-1 cursor-pointer text-sm"
+                            onClick={() => toggleTipo(servicio.value)}
+                          >
+                            {servicio.label}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+              {tipos.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2" data-testid="selected-services-badges">
+                  {tipos.map((tipo) => {
+                    const servicio = tiposDeServicio.find(s => s.value === tipo);
+                    return servicio ? (
+                      <Badge key={tipo} variant="secondary" className="gap-1">
+                        {servicio.label}
+                        <X
+                          className="h-3 w-3 cursor-pointer"
+                          onClick={() => removeTipo(tipo)}
+                          data-testid={`remove-service-${tipo}`}
+                        />
+                      </Badge>
+                    ) : null;
+                  })}
+                </div>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="descripcion">Descripción</Label>
