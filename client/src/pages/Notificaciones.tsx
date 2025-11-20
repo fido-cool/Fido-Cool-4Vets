@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Bell, AlertTriangle, Info, X, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { apiRequest } from "@/lib/queryClient";
 import {
   Dialog,
   DialogContent,
@@ -192,22 +193,50 @@ export default function Notificaciones() {
     form.reset({ mensaje: "" });
   };
 
+  // Mutation para enviar recordatorio al backend
+  const enviarRecordatorioMutation = useMutation({
+    mutationFn: async (payload: {
+      notificacionId: string;
+      tipo: "sin_visita" | "cita_proxima";
+      cliente: { nombre: string; email: string; telefono: string };
+      mascota: { nombre: string };
+      mensaje: string;
+    }) => {
+      return await apiRequest("POST", "/api/notificaciones/enviar-recordatorio", payload);
+    },
+    onSuccess: (data, variables) => {
+      toast({
+        title: "Recordatorio enviado",
+        description: `Se ha enviado el recordatorio a ${variables.cliente.nombre}.`,
+      });
+      marcarResuelto(variables.notificacionId);
+      cerrarDialogRecordatorio();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error al enviar recordatorio",
+        description: error.message || "No se pudo enviar el recordatorio. Por favor, intenta de nuevo.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const enviarRecordatorio = (data: MessageForm) => {
     if (!notificacionSeleccionada) return;
 
-    // Simulación de envío
-    console.log("Enviando recordatorio a:", notificacionSeleccionada.clienteNombre);
-    console.log("Teléfono:", notificacionSeleccionada.clienteTelefono);
-    console.log("Email:", notificacionSeleccionada.clienteEmail);
-    console.log("Mensaje:", data.mensaje);
-
-    toast({
-      title: "Recordatorio enviado",
-      description: `Se ha enviado el recordatorio a ${notificacionSeleccionada.clienteNombre}.`,
+    enviarRecordatorioMutation.mutate({
+      notificacionId: notificacionSeleccionada.id,
+      tipo: notificacionSeleccionada.tipo,
+      cliente: {
+        nombre: notificacionSeleccionada.clienteNombre,
+        email: notificacionSeleccionada.clienteEmail,
+        telefono: notificacionSeleccionada.clienteTelefono,
+      },
+      mascota: {
+        nombre: notificacionSeleccionada.mascotaNombre,
+      },
+      mensaje: data.mensaje,
     });
-
-    marcarResuelto(notificacionSeleccionada.id);
-    cerrarDialogRecordatorio();
   };
 
   const getNotificacionStyles = (tipo: string) => {
@@ -384,6 +413,7 @@ export default function Notificaciones() {
                   type="button"
                   variant="outline"
                   onClick={cerrarDialogRecordatorio}
+                  disabled={enviarRecordatorioMutation.isPending}
                   data-testid="button-cancel-reminder"
                 >
                   Cancelar
@@ -391,10 +421,11 @@ export default function Notificaciones() {
                 <Button
                   type="submit"
                   className="gap-2"
+                  disabled={enviarRecordatorioMutation.isPending}
                   data-testid="button-confirm-send-reminder"
                 >
                   <Send className="h-4 w-4" />
-                  Enviar Recordatorio
+                  {enviarRecordatorioMutation.isPending ? "Enviando..." : "Enviar Recordatorio"}
                 </Button>
               </DialogFooter>
             </form>
