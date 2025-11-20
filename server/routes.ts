@@ -10,6 +10,7 @@ import {
   insertMascotaSchema,
   insertEventoSchema,
   insertMultipleEventosSchema,
+  enviarRecordatorioSchema,
   type InsertMascota,
   type InsertEvento,
 } from "@shared/schema";
@@ -412,6 +413,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting evento:", error);
       res.status(500).json({ message: "Failed to delete evento" });
+    }
+  });
+
+  // Notificaciones routes
+  app.post("/api/notificaciones/enviar-recordatorio", isAuthenticated, async (req: any, res) => {
+    try {
+      const veterinarioId = getUserId(req);
+      if (!veterinarioId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      // Validate request body
+      const data = enviarRecordatorioSchema.parse(req.body);
+
+      // Get webhook URL from environment variable or use production URL
+      const webhookUrl = process.env.FIDO_N8N_WEBHOOK_URL || "https://fidon8n.fido.cool/webhook/fido-mail";
+
+      // Prepare payload for n8n webhook
+      const webhookPayload = {
+        notificationId: data.notificacionId,
+        tipo: data.tipo,
+        veterinarioId,
+        cliente: {
+          nombre: data.cliente.nombre,
+          email: data.cliente.email,
+          telefono: data.cliente.telefono,
+        },
+        mascota: {
+          nombre: data.mascota.nombre,
+        },
+        mensaje: data.mensaje,
+        channel: "email",
+        origin: "Notificaciones",
+      };
+
+      let webhookStatus = "success";
+      let webhookError = null;
+
+      // Call n8n webhook
+      try {
+        const response = await fetch(webhookUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(webhookPayload),
+          signal: AbortSignal.timeout(10000), // 10 second timeout
+        });
+
+        if (!response.ok) {
+          webhookStatus = "error";
+          webhookError = `Webhook returned ${response.status}: ${response.statusText}`;
+          console.error("Webhook error:", webhookError);
+        }
+      } catch (error: any) {
+        webhookStatus = "error";
+        webhookError = error.message || "Failed to call webhook";
+        console.error("Error calling n8n webhook:", error);
+      }
+
+      // Log the recordatorio to database
+      try {
+        await storage.createRecordatorioEnviado({
+          veterinarioId,
+          notificacionId: data.notificacionId,
+          clienteId: null, // Could be enhanced to include actual cliente ID
+          mascotaId: null, // Could be enhanced to include actual mascota ID
+          tipo: data.tipo,
+          clienteNombre: data.cliente.nombre,
+          clienteEmail: data.cliente.email,
+          clienteTelefono: data.cliente.telefono,
+          mascotaNombre: data.mascota.nombre,
+          mensaje: data.mensaje,
+          status: webhookStatus,
+          errorMessage: webhookError,
+        });
+      } catch (dbError) {
+        console.error("Error logging recordatorio:", dbError);
+        // Even if logging fails, we should return webhook status
+      }
+
+      // Return response based on webhook status
+      if (webhookStatus === "error") {
+        return res.status(502).json({ 
+          message: "Error al enviar recordatorio", 
+          error: webhookError 
+        });
+      }
+
+      res.json({ 
+        success: true, 
+        message: "Recordatorio enviado exitosamente" 
+      });
+    } catch (error: any) {
+      console.error("Error processing recordatorio:", error);
+      res.status(400).json({ 
+        message: error.message || "Failed to process recordatorio" 
+      });
     }
   });
 
