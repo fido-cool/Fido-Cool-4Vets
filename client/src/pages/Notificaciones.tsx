@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Bell, AlertTriangle, CheckCircle, X, Send } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Bell, AlertTriangle, Info, X, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { format, formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
-import type { Evento, Mascota, Cliente } from "@shared/schema";
+import type { Evento } from "@shared/schema";
 
 interface EventoConDetalles extends Evento {
   mascota: {
@@ -23,14 +21,16 @@ interface EventoConDetalles extends Evento {
 
 interface Notificacion {
   id: string;
-  tipo: "sin_visita" | "vacuna_proxima" | "seguimiento";
+  tipo: "sin_visita" | "cita_proxima";
   mensaje: string;
   mascotaNombre: string;
+  mascotaRaza?: string;
   clienteNombre: string;
   clienteTelefono: string;
   clienteEmail: string;
   diasTranscurridos?: number;
   fechaUltimaVisita?: Date;
+  fechaCita?: Date;
   prioridad: "alta" | "media" | "baja";
 }
 
@@ -48,6 +48,7 @@ export default function Notificaciones() {
     const notificaciones: Notificacion[] = [];
     const mascotasVisitadas = new Map<number, Date>();
 
+    // Notificaciones de clientes sin visitas recientes
     eventos
       .filter((e) => new Date(e.fecha) < ahora)
       .forEach((evento) => {
@@ -70,7 +71,7 @@ export default function Notificaciones() {
         notificaciones.push({
           id: `sin_visita_${mascotaId}`,
           tipo: "sin_visita",
-          mensaje: `Han pasado ${semanas} ${semanas === 1 ? 'semana' : 'semanas'} desde la última visita de ${evento.mascota.nombre}.`,
+          mensaje: `Han pasado ${semanas} ${semanas === 1 ? 'semana' : 'semanas'} desde la última visita de ${evento.mascota.nombre} (${evento.mascota.cliente.nombre})`,
           mascotaNombre: evento.mascota.nombre,
           clienteNombre: evento.mascota.cliente.nombre,
           clienteTelefono: evento.mascota.cliente.telefono,
@@ -82,21 +83,27 @@ export default function Notificaciones() {
       }
     });
 
+    // Notificaciones de citas próximas (≤3 días)
     const eventosFuturos = eventos.filter((e) => new Date(e.fecha) > ahora);
     eventosFuturos.forEach((evento) => {
       const fechaEvento = new Date(evento.fecha);
       const diasHastaEvento = Math.floor((fechaEvento.getTime() - ahora.getTime()) / (1000 * 60 * 60 * 24));
 
-      if (diasHastaEvento <= 7 && diasHastaEvento >= 0 && evento.tipo === "vacunacion") {
+      if (diasHastaEvento <= 3 && diasHastaEvento >= 0) {
+        const diasTexto = diasHastaEvento === 0 ? 'hoy' : 
+                         diasHastaEvento === 1 ? 'mañana' : 
+                         `en ${diasHastaEvento} días`;
+        
         notificaciones.push({
-          id: `vacuna_proxima_${evento.id}`,
-          tipo: "vacuna_proxima",
-          mensaje: `${evento.mascota.nombre} tiene vacunación programada en ${diasHastaEvento} ${diasHastaEvento === 1 ? 'día' : 'días'}.`,
+          id: `cita_proxima_${evento.id}`,
+          tipo: "cita_proxima",
+          mensaje: `${evento.mascota.nombre} (${evento.mascota.cliente.nombre}) tiene cita ${diasTexto}`,
           mascotaNombre: evento.mascota.nombre,
           clienteNombre: evento.mascota.cliente.nombre,
           clienteTelefono: evento.mascota.cliente.telefono,
           clienteEmail: evento.mascota.cliente.email,
-          prioridad: diasHastaEvento <= 2 ? "alta" : "media",
+          fechaCita: fechaEvento,
+          prioridad: diasHastaEvento === 0 ? "alta" : diasHastaEvento === 1 ? "media" : "baja",
         });
       }
     });
@@ -110,7 +117,7 @@ export default function Notificaciones() {
   const notificaciones = generarNotificaciones().filter((n) => !resueltas.has(n.id));
 
   const marcarResuelto = (id: string) => {
-    setResueltas(new Set([...resueltas, id]));
+    setResueltas(new Set(Array.from(resueltas).concat(id)));
   };
 
   const enviarRecordatorio = (notificacion: Notificacion) => {
@@ -118,27 +125,37 @@ export default function Notificaciones() {
     marcarResuelto(notificacion.id);
   };
 
-  const getPrioridadColor = (prioridad: string) => {
-    switch (prioridad) {
-      case "alta":
-        return "destructive";
-      case "media":
-        return "default";
-      case "baja":
-        return "secondary";
+  const getNotificacionStyles = (tipo: string) => {
+    switch (tipo) {
+      case "sin_visita":
+        return {
+          container: "bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-900",
+          icon: "text-orange-600 dark:text-orange-400",
+          title: "text-orange-900 dark:text-orange-100",
+        };
+      case "cita_proxima":
+        return {
+          container: "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900",
+          icon: "text-blue-600 dark:text-blue-400",
+          title: "text-blue-900 dark:text-blue-100",
+        };
       default:
-        return "secondary";
+        return {
+          container: "bg-muted",
+          icon: "text-muted-foreground",
+          title: "text-foreground",
+        };
     }
   };
 
-  const getTipoIcon = (tipo: string) => {
+  const getTipoIcon = (tipo: string, styles: any) => {
     switch (tipo) {
       case "sin_visita":
-        return <AlertTriangle className="w-5 h-5" />;
-      case "vacuna_proxima":
-        return <Bell className="w-5 h-5" />;
+        return <AlertTriangle className={`w-6 h-6 ${styles.icon}`} />;
+      case "cita_proxima":
+        return <Info className={`w-6 h-6 ${styles.icon}`} />;
       default:
-        return <Bell className="w-5 h-5" />;
+        return <Bell className={`w-6 h-6 ${styles.icon}`} />;
     }
   };
 
@@ -155,88 +172,81 @@ export default function Notificaciones() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2" data-testid="text-page-title">
-          <Bell className="h-8 w-8" />
-          Notificaciones Inteligentes
+        <h1 className="text-3xl font-bold" data-testid="text-page-title">
+          Enviar Notificaciones
         </h1>
         <p className="text-muted-foreground mt-1">
-          Alertas y recordatorios generados por Fido para mantener a tus clientes al día
+          Alertas y recordatorios de Fido para tus pacientes
         </p>
       </div>
 
-      <div className="grid gap-4">
+      <div className="space-y-4">
         {notificaciones.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center p-12">
-              <CheckCircle className="w-16 h-16 text-muted-foreground mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Todo al día</h3>
-              <p className="text-muted-foreground text-center">
-                No hay notificaciones pendientes. Fido te avisará cuando haya algo que requiera tu atención.
-              </p>
-            </CardContent>
-          </Card>
+          <div className="flex flex-col items-center justify-center p-12 text-center">
+            <Bell className="w-16 h-16 text-muted-foreground mb-4" />
+            <h3 className="text-xl font-semibold mb-2">No hay notificaciones pendientes</h3>
+            <p className="text-muted-foreground">
+              Fido te avisará cuando haya citas próximas o clientes sin visitas recientes.
+            </p>
+          </div>
         ) : (
-          notificaciones.map((notif) => (
-            <Card key={notif.id} className="hover-elevate" data-testid={`notification-${notif.id}`}>
-              <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                <div className="flex items-start gap-3 flex-1">
-                  <div className="mt-1">{getTipoIcon(notif.tipo)}</div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CardTitle className="text-base">{notif.mensaje}</CardTitle>
-                      <Badge variant={getPrioridadColor(notif.prioridad)} className="text-xs">
-                        {notif.prioridad}
-                      </Badge>
-                    </div>
+          notificaciones.map((notif) => {
+            const styles = getNotificacionStyles(notif.tipo);
+            
+            return (
+              <div
+                key={notif.id}
+                className={`relative rounded-lg border p-6 ${styles.container}`}
+                data-testid={`notification-${notif.id}`}
+              >
+                <button
+                  onClick={() => marcarResuelto(notif.id)}
+                  className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+                  data-testid={`button-dismiss-${notif.id}`}
+                >
+                  <X className="h-5 w-5" />
+                </button>
+
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="mt-1">{getTipoIcon(notif.tipo, styles)}</div>
+                  <div className="flex-1 pr-8">
+                    <h3 className={`text-base font-semibold mb-3 ${styles.title}`}>
+                      {notif.mensaje}
+                    </h3>
                     <div className="space-y-1 text-sm text-muted-foreground">
                       <div>
                         <span className="font-medium">Cliente:</span> {notif.clienteNombre}
                       </div>
                       <div>
                         <span className="font-medium">Mascota:</span> {notif.mascotaNombre}
+                        {notif.mascotaRaza && ` (${notif.mascotaRaza})`}
                       </div>
-                      <div>
-                        <span className="font-medium">Contacto:</span> {notif.clienteTelefono} · {notif.clienteEmail}
-                      </div>
-                      {notif.fechaUltimaVisita && (
-                        <div className="text-xs">
-                          Última visita: {format(notif.fechaUltimaVisita, "dd/MM/yyyy", { locale: es })} 
-                          ({formatDistanceToNow(notif.fechaUltimaVisita, { locale: es, addSuffix: true })})
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => marcarResuelto(notif.id)}
-                  data-testid={`button-dismiss-${notif.id}`}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </CardHeader>
-              <CardContent className="flex gap-2 pt-4 border-t">
-                <Button
-                  onClick={() => enviarRecordatorio(notif)}
-                  size="sm"
-                  className="gap-2"
-                  data-testid={`button-send-reminder-${notif.id}`}
-                >
-                  <Send className="h-4 w-4" />
-                  Enviar Recordatorio
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => marcarResuelto(notif.id)}
-                  data-testid={`button-resolve-${notif.id}`}
-                >
-                  Marcar como resuelto
-                </Button>
-              </CardContent>
-            </Card>
-          ))
+
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => marcarResuelto(notif.id)}
+                    className="bg-background"
+                    data-testid={`button-resolve-${notif.id}`}
+                  >
+                    Marcar como resuelto
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => enviarRecordatorio(notif)}
+                    className="gap-2"
+                    data-testid={`button-send-reminder-${notif.id}`}
+                  >
+                    Enviar recordatorio
+                  </Button>
+                </div>
+              </div>
+            );
+          })
         )}
       </div>
     </div>
