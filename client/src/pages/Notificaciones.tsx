@@ -1,10 +1,38 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Bell, AlertTriangle, Info, X, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { format, formatDistanceToNow } from "date-fns";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import type { Evento } from "@shared/schema";
+
+// Validation schema for message
+const messageSchema = z.object({
+  mensaje: z.string().min(10, "El mensaje debe tener al menos 10 caracteres"),
+});
+
+type MessageForm = z.infer<typeof messageSchema>;
 
 interface EventoConDetalles extends Evento {
   mascota: {
@@ -29,6 +57,7 @@ interface Notificacion {
   clienteTelefono: string;
   clienteEmail: string;
   diasTranscurridos?: number;
+  semanas?: number;
   fechaUltimaVisita?: Date;
   fechaCita?: Date;
   prioridad: "alta" | "media" | "baja";
@@ -36,6 +65,15 @@ interface Notificacion {
 
 export default function Notificaciones() {
   const [resueltas, setResueltas] = useState<Set<string>>(new Set());
+  const [notificacionSeleccionada, setNotificacionSeleccionada] = useState<Notificacion | null>(null);
+  const { toast } = useToast();
+
+  const form = useForm<MessageForm>({
+    resolver: zodResolver(messageSchema),
+    defaultValues: {
+      mensaje: "",
+    },
+  });
 
   const { data: eventos, isLoading } = useQuery<EventoConDetalles[]>({
     queryKey: ["/api/eventos"],
@@ -77,6 +115,7 @@ export default function Notificaciones() {
           clienteTelefono: evento.mascota.cliente.telefono,
           clienteEmail: evento.mascota.cliente.email,
           diasTranscurridos,
+          semanas,
           fechaUltimaVisita: ultimaVisita,
           prioridad: diasTranscurridos >= 60 ? "alta" : diasTranscurridos >= 30 ? "media" : "baja",
         });
@@ -114,15 +153,61 @@ export default function Notificaciones() {
     });
   };
 
+  const generarMensajeSugerido = (notificacion: Notificacion): string => {
+    if (notificacion.tipo === "sin_visita") {
+      const semanas = notificacion.semanas || 1;
+      
+      return `Hola ${notificacion.clienteNombre},\n\n` +
+        `Notamos que han pasado ${semanas} ${semanas === 1 ? 'semana' : 'semanas'} desde la última visita de ${notificacion.mascotaNombre}. ` +
+        `Nos gustaría recordarte la importancia de mantener las revisiones periódicas para asegurar su bienestar.\n\n` +
+        `¿Te gustaría agendar una cita? Estamos disponibles para atenderte.\n\n` +
+        `Saludos cordiales,\nFidoCool - Clínica Veterinaria`;
+    } else if (notificacion.tipo === "cita_proxima") {
+      const fechaTexto = notificacion.fechaCita 
+        ? format(new Date(notificacion.fechaCita), "dd 'de' MMMM 'a las' HH:mm", { locale: es })
+        : "";
+      
+      return `Hola ${notificacion.clienteNombre},\n\n` +
+        `Este es un recordatorio de que ${notificacion.mascotaNombre} tiene una cita programada para el ${fechaTexto}.\n\n` +
+        `Por favor, confirma tu asistencia o contáctanos si necesitas reprogramar.\n\n` +
+        `¡Te esperamos!\n\nSaludos cordiales,\nFidoCool - Clínica Veterinaria`;
+    }
+    return "";
+  };
+
   const notificaciones = generarNotificaciones().filter((n) => !resueltas.has(n.id));
 
   const marcarResuelto = (id: string) => {
     setResueltas(new Set(Array.from(resueltas).concat(id)));
   };
 
-  const enviarRecordatorio = (notificacion: Notificacion) => {
-    console.log("Enviando recordatorio a:", notificacion.clienteNombre);
-    marcarResuelto(notificacion.id);
+  const abrirDialogRecordatorio = (notificacion: Notificacion) => {
+    setNotificacionSeleccionada(notificacion);
+    const mensajeSugerido = generarMensajeSugerido(notificacion);
+    form.reset({ mensaje: mensajeSugerido });
+  };
+
+  const cerrarDialogRecordatorio = () => {
+    setNotificacionSeleccionada(null);
+    form.reset({ mensaje: "" });
+  };
+
+  const enviarRecordatorio = (data: MessageForm) => {
+    if (!notificacionSeleccionada) return;
+
+    // Simulación de envío
+    console.log("Enviando recordatorio a:", notificacionSeleccionada.clienteNombre);
+    console.log("Teléfono:", notificacionSeleccionada.clienteTelefono);
+    console.log("Email:", notificacionSeleccionada.clienteEmail);
+    console.log("Mensaje:", data.mensaje);
+
+    toast({
+      title: "Recordatorio enviado",
+      description: `Se ha enviado el recordatorio a ${notificacionSeleccionada.clienteNombre}.`,
+    });
+
+    marcarResuelto(notificacionSeleccionada.id);
+    cerrarDialogRecordatorio();
   };
 
   const getNotificacionStyles = (tipo: string) => {
@@ -237,10 +322,11 @@ export default function Notificaciones() {
                   </Button>
                   <Button
                     size="sm"
-                    onClick={() => enviarRecordatorio(notif)}
+                    onClick={() => abrirDialogRecordatorio(notif)}
                     className="gap-2"
                     data-testid={`button-send-reminder-${notif.id}`}
                   >
+                    <Send className="h-4 w-4" />
                     Enviar recordatorio
                   </Button>
                 </div>
@@ -249,6 +335,72 @@ export default function Notificaciones() {
           })
         )}
       </div>
+
+      {/* Dialog para enviar recordatorio */}
+      <Dialog open={!!notificacionSeleccionada} onOpenChange={(open) => !open && cerrarDialogRecordatorio()}>
+        <DialogContent className="max-w-2xl" data-testid="dialog-send-reminder">
+          <DialogHeader>
+            <DialogTitle>Enviar Recordatorio</DialogTitle>
+            <DialogDescription>
+              Revisa y personaliza el mensaje antes de enviarlo a {notificacionSeleccionada?.clienteNombre}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(enviarRecordatorio)} className="space-y-4">
+              <div className="space-y-2">
+                <div className="text-sm">
+                  <p className="text-muted-foreground">
+                    <span className="font-medium">Destinatario:</span> {notificacionSeleccionada?.clienteNombre}
+                  </p>
+                  <p className="text-muted-foreground">
+                    <span className="font-medium">Contacto:</span> {notificacionSeleccionada?.clienteTelefono} · {notificacionSeleccionada?.clienteEmail}
+                  </p>
+                </div>
+              </div>
+
+              <FormField
+                control={form.control}
+                name="mensaje"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mensaje</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        rows={10}
+                        placeholder="Escribe tu mensaje..."
+                        className="resize-none"
+                        data-testid="textarea-message"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={cerrarDialogRecordatorio}
+                  data-testid="button-cancel-reminder"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  className="gap-2"
+                  data-testid="button-confirm-send-reminder"
+                >
+                  <Send className="h-4 w-4" />
+                  Enviar Recordatorio
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
