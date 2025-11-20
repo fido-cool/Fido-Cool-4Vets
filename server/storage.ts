@@ -3,6 +3,7 @@ import {
   clientes,
   mascotas,
   eventos,
+  recordatoriosEnviados,
   type User,
   type UpsertUser,
   type Cliente,
@@ -11,6 +12,8 @@ import {
   type InsertMascota,
   type Evento,
   type InsertEvento,
+  type RecordatorioEnviado,
+  type InsertRecordatorioEnviado,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, gte, inArray } from "drizzle-orm";
@@ -72,6 +75,10 @@ export interface IStorage {
     totalMascotas: number;
     proximosEventos: number;
   }>;
+
+  // Recordatorio operations
+  createRecordatorioEnviado(recordatorio: InsertRecordatorioEnviado): Promise<RecordatorioEnviado>;
+  getRecordatoriosEnviados(veterinarioId: string): Promise<RecordatorioEnviado[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -646,6 +653,23 @@ export class DatabaseStorage implements IStorage {
       totalMascotas: mascotasData.length,
       proximosEventos: eventosData.length,
     };
+  }
+
+  // Recordatorio operations
+  async createRecordatorioEnviado(recordatorio: InsertRecordatorioEnviado): Promise<RecordatorioEnviado> {
+    const [created] = await db
+      .insert(recordatoriosEnviados)
+      .values(recordatorio)
+      .returning();
+    return created;
+  }
+
+  async getRecordatoriosEnviados(veterinarioId: string): Promise<RecordatorioEnviado[]> {
+    return db
+      .select()
+      .from(recordatoriosEnviados)
+      .where(eq(recordatoriosEnviados.veterinarioId, veterinarioId))
+      .orderBy(desc(recordatoriosEnviados.sentAt));
   }
 }
 

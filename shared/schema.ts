@@ -173,3 +173,48 @@ export const serviceTypes = {
 } as const;
 
 export type ServiceType = keyof typeof serviceTypes;
+
+// Recordatorios enviados table (logs de envíos a n8n webhook)
+export const recordatoriosEnviados = pgTable("recordatorios_enviados", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  veterinarioId: varchar("veterinario_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  notificacionId: varchar("notificacion_id", { length: 255 }).notNull(),
+  clienteId: integer("cliente_id").references(() => clientes.id, { onDelete: "set null" }),
+  mascotaId: integer("mascota_id").references(() => mascotas.id, { onDelete: "set null" }),
+  tipo: varchar("tipo", { length: 50 }).notNull(), // sin_visita | cita_proxima
+  clienteNombre: varchar("cliente_nombre", { length: 255 }).notNull(),
+  clienteEmail: varchar("cliente_email", { length: 255 }).notNull(),
+  clienteTelefono: varchar("cliente_telefono", { length: 50 }).notNull(),
+  mascotaNombre: varchar("mascota_nombre", { length: 255 }).notNull(),
+  mensaje: text("mensaje").notNull(),
+  status: varchar("status", { length: 50 }).notNull(), // success | error
+  errorMessage: text("error_message"),
+  sentAt: timestamp("sent_at").defaultNow(),
+});
+
+export const insertRecordatorioEnviadoSchema = createInsertSchema(recordatoriosEnviados).omit({
+  id: true,
+  sentAt: true,
+});
+
+export type InsertRecordatorioEnviado = z.infer<typeof insertRecordatorioEnviadoSchema>;
+export type RecordatorioEnviado = typeof recordatoriosEnviados.$inferSelect;
+
+// Schema for sending a reminder via n8n webhook
+export const enviarRecordatorioSchema = z.object({
+  notificacionId: z.string(),
+  tipo: z.enum(["sin_visita", "cita_proxima"]),
+  cliente: z.object({
+    nombre: z.string(),
+    email: z.string().email(),
+    telefono: z.string(),
+  }),
+  mascota: z.object({
+    nombre: z.string(),
+  }),
+  mensaje: z.string().min(10, "El mensaje debe tener al menos 10 caracteres"),
+});
+
+export type EnviarRecordatorio = z.infer<typeof enviarRecordatorioSchema>;
