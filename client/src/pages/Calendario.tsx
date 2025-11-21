@@ -7,6 +7,7 @@ import { Plus, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { AddEventDialog } from "@/components/AddEventDialog";
+import { EditEventDialog } from "@/components/EditEventDialog";
 import { serviceTypes } from "@shared/schema";
 import type { Evento, Mascota, Cliente } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -46,12 +47,16 @@ interface CalendarEvent {
   mascotaId: number;
   mascotaNombre: string;
   clienteNombre: string;
+  descripcion?: string | null;
+  fechaOriginal: Date;
 }
 
 export default function Calendario() {
   const [view, setView] = useState<View>("week");
   const [date, setDate] = useState(new Date());
   const [showAddEvent, setShowAddEvent] = useState(false);
+  const [showEditEvent, setShowEditEvent] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const { toast } = useToast();
 
   const { data: eventos, isLoading } = useQuery<EventoConDetalles[]>({
@@ -81,6 +86,54 @@ export default function Calendario() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      return await apiRequest("PUT", `/api/eventos/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/eventos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/eventos/upcoming"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      toast({
+        title: "Cita actualizada",
+        description: "La cita se ha actualizado exitosamente.",
+      });
+      setShowEditEvent(false);
+      setSelectedEvent(null);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar la cita. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest("DELETE", `/api/eventos/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/eventos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/eventos/upcoming"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      toast({
+        title: "Cita eliminada",
+        description: "La cita se ha eliminado exitosamente.",
+      });
+      setShowEditEvent(false);
+      setSelectedEvent(null);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la cita. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const calendarEvents: CalendarEvent[] =
     eventos?.map((evento) => {
       const start = new Date(evento.fecha);
@@ -99,8 +152,15 @@ export default function Calendario() {
         mascotaId: evento.mascota.id,
         mascotaNombre: evento.mascota.nombre,
         clienteNombre: evento.mascota.cliente.nombre,
+        descripcion: evento.descripcion,
+        fechaOriginal: start,
       };
     }) || [];
+
+  const handleSelectEvent = (event: CalendarEvent) => {
+    setSelectedEvent(event);
+    setShowEditEvent(true);
+  };
 
   const eventStyleGetter = (event: CalendarEvent) => {
     return {
@@ -167,6 +227,7 @@ export default function Calendario() {
             onView={setView}
             date={date}
             onNavigate={setDate}
+            onSelectEvent={handleSelectEvent}
             views={["month", "week", "day"]}
             messages={{
               next: "Siguiente",
@@ -209,6 +270,24 @@ export default function Calendario() {
         onOpenChange={setShowAddEvent}
         onAdd={(event) => addMutation.mutate(event)}
       />
+
+      {selectedEvent && (
+        <EditEventDialog
+          open={showEditEvent}
+          onOpenChange={setShowEditEvent}
+          evento={{
+            id: selectedEvent.id,
+            mascotaId: selectedEvent.mascotaId,
+            tipo: selectedEvent.tipo,
+            fecha: selectedEvent.fechaOriginal,
+            descripcion: selectedEvent.descripcion,
+            mascotaNombre: selectedEvent.mascotaNombre,
+            clienteNombre: selectedEvent.clienteNombre,
+          }}
+          onUpdate={(id, data) => updateMutation.mutate({ id, data })}
+          onDelete={(id) => deleteMutation.mutate(id)}
+        />
+      )}
     </div>
   );
 }
