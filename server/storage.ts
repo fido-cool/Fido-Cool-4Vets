@@ -628,23 +628,28 @@ export class DatabaseStorage implements IStorage {
     veterinarioId: string,
     data: Partial<InsertEvento>
   ): Promise<Evento | undefined> {
-    const [updated] = await db
-      .update(eventos)
-      .set(data)
+    // First verify the evento belongs to this veterinarian
+    const eventoExists = await db
+      .select({ id: eventos.id })
+      .from(eventos)
+      .innerJoin(mascotas, eq(eventos.mascotaId, mascotas.id))
+      .innerJoin(clientes, eq(mascotas.clienteId, clientes.id))
       .where(
         and(
           eq(eventos.id, id),
-          eq(
-            eventos.mascotaId,
-            db
-              .select({ id: mascotas.id })
-              .from(mascotas)
-              .innerJoin(clientes, eq(mascotas.clienteId, clientes.id))
-              .where(eq(clientes.veterinarioId, veterinarioId))
-              .limit(1) as any
-          )
+          eq(clientes.veterinarioId, veterinarioId)
         )
       )
+      .limit(1);
+
+    if (eventoExists.length === 0) {
+      return undefined;
+    }
+
+    const [updated] = await db
+      .update(eventos)
+      .set(data)
+      .where(eq(eventos.id, id))
       .returning();
     return updated;
   }

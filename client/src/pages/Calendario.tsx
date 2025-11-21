@@ -43,6 +43,7 @@ interface CalendarEvent {
   start: Date;
   end: Date;
   tipo: string;
+  tipoKey: string;
   color: string;
   mascotaId: number;
   mascotaNombre: string;
@@ -139,15 +140,16 @@ export default function Calendario() {
       const start = new Date(evento.fecha);
       const end = new Date(start.getTime() + 60 * 60 * 1000);
       
-      const tipo = evento.tipo as keyof typeof serviceTypes;
-      const color = serviceTypes[tipo]?.color || serviceTypes.otro.color;
+      const tipoKey = evento.tipo as keyof typeof serviceTypes;
+      const color = serviceTypes[tipoKey]?.color || serviceTypes.otro.color;
 
       return {
         id: evento.id,
         title: `${evento.mascota.nombre} - ${evento.mascota.cliente.nombre}`,
         start,
         end,
-        tipo: serviceTypes[tipo]?.label || evento.tipo,
+        tipo: serviceTypes[tipoKey]?.label || evento.tipo,
+        tipoKey: evento.tipo,
         color,
         mascotaId: evento.mascota.id,
         mascotaNombre: evento.mascota.nombre,
@@ -278,7 +280,7 @@ export default function Calendario() {
           evento={{
             id: selectedEvent.id,
             mascotaId: selectedEvent.mascotaId,
-            tipo: selectedEvent.tipo,
+            tipo: selectedEvent.tipoKey,
             fecha: selectedEvent.fechaOriginal,
             descripcion: selectedEvent.descripcion,
             mascotaNombre: selectedEvent.mascotaNombre,

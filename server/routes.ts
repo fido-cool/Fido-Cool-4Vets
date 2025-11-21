@@ -408,8 +408,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const data = insertEventoSchema.partial().parse(req.body);
       
-      // If mascotaId is being updated, verify it belongs to this veterinarian
-      if (data.mascotaId) {
+      // Verify the evento belongs to this veterinarian before updating
+      const eventoExists = await storage.getEventos(veterinarioId);
+      const evento = eventoExists.find(e => e.id === id);
+      if (!evento) {
+        return res.status(404).json({ message: "Evento not found" });
+      }
+      
+      // If mascotaId is being updated, verify the new mascota belongs to this veterinarian
+      if (data.mascotaId && data.mascotaId !== evento.mascotaId) {
         const mascota = await storage.getMascota(data.mascotaId, veterinarioId);
         if (!mascota) {
           return res.status(403).json({ 

@@ -149,6 +149,9 @@ export function EditEventDialog({
       fecha: parsedDate.toISOString(),
       descripcion: data.descripcion || "",
     });
+    
+    // Reset form after successful submission
+    form.reset();
   };
 
   const handleDelete = () => {
@@ -206,6 +209,7 @@ export function EditEventDialog({
                             <SelectItem
                               key={mascota.id}
                               value={mascota.id.toString()}
+                              data-testid={`select-item-pet-${mascota.id}`}
                             >
                               {mascota.nombre} ({mascota.cliente.nombre})
                             </SelectItem>
@@ -232,7 +236,11 @@ export function EditEventDialog({
                       </FormControl>
                       <SelectContent>
                         {tiposDeServicio.map((servicio) => (
-                          <SelectItem key={servicio.value} value={servicio.value}>
+                          <SelectItem
+                            key={servicio.value}
+                            value={servicio.value}
+                            data-testid={`select-item-service-${servicio.value}`}
+                          >
                             {servicio.label}
                           </SelectItem>
                         ))}
