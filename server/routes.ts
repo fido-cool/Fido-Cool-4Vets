@@ -11,6 +11,7 @@ import {
   insertEventoSchema,
   insertMultipleEventosSchema,
   enviarRecordatorioSchema,
+  updateProfileSchema,
   type InsertMascota,
   type InsertEvento,
 } from "@shared/schema";
@@ -65,6 +66,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  app.patch("/api/auth/profile", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const validation = updateProfileSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Datos inválidos", 
+          errors: validation.error.errors 
+        });
+      }
+
+      const updatedUser = await storage.updateUser(userId, validation.data);
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // No enviar passwordHash al cliente
+      const { passwordHash, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).json({ message: "Failed to update profile" });
     }
   });
 

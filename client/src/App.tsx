@@ -13,6 +13,7 @@ import Clientes from "@/pages/Clientes";
 import Mascotas from "@/pages/Mascotas";
 import Notificaciones from "@/pages/Notificaciones";
 import Eventos from "@/pages/Eventos";
+import Configuracion from "@/pages/Configuracion";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import NotFound from "@/pages/not-found";
@@ -38,7 +39,7 @@ function ProtectedRoutes() {
       <Route path="/mascotas" component={Mascotas} />
       <Route path="/eventos" component={Eventos} />
       <Route path="/notificaciones" component={Notificaciones} />
-      <Route path="/configuracion" component={NotFound} />
+      <Route path="/configuracion" component={Configuracion} />
       <Route component={NotFound} />
     </Switch>
   );

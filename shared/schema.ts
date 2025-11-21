@@ -56,6 +56,15 @@ export const loginUserSchema = z.object({
 
 export type LoginUser = z.infer<typeof loginUserSchema>;
 
+// Schema for updating user profile
+export const updateProfileSchema = z.object({
+  firstName: z.string().min(1, "El nombre es requerido"),
+  lastName: z.string().min(1, "El apellido es requerido"),
+  email: z.string().email("Email inválido"),
+});
+
+export type UpdateProfile = z.infer<typeof updateProfileSchema>;
+
 // Clientes (dueños de mascotas) table
 export const clientes = pgTable("clientes", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),

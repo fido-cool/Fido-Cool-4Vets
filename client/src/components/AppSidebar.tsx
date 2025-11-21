@@ -55,7 +55,7 @@ export function AppSidebar() {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   
-  const { data: user } = useQuery({
+  const { data: user } = useQuery<any>({
     queryKey: ["/api/auth/user"],
   });
 
