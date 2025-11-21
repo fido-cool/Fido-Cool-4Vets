@@ -3,6 +3,7 @@ import {
   index,
   integer,
   jsonb,
+  pgEnum,
   pgTable,
   text,
   timestamp,
@@ -128,6 +129,19 @@ export const insertClienteWithMascotasSchema = z.object({
 
 export type InsertClienteWithMascotas = z.infer<typeof insertClienteWithMascotasSchema>;
 
+// Estado de citas enum
+export const estadoCitaEnum = pgEnum("estado_cita", [
+  "programada",
+  "automatica",
+  "confirmada",
+  "pendiente",
+  "reprogramada",
+  "cancelada",
+  "no_asistio",
+  "asistida",
+  "sin_respuesta",
+]);
+
 // Eventos table
 export const eventos = pgTable("eventos", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
@@ -137,6 +151,7 @@ export const eventos = pgTable("eventos", {
   tipo: varchar("tipo", { length: 100 }).notNull(),
   fecha: timestamp("fecha").notNull(),
   descripcion: text("descripcion"),
+  estado: estadoCitaEnum("estado").notNull().default("programada"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -173,6 +188,21 @@ export const serviceTypes = {
 } as const;
 
 export type ServiceType = keyof typeof serviceTypes;
+
+// Estados de citas con etiquetas
+export const estadosCita = {
+  programada: { label: "Programada" },
+  automatica: { label: "Automática" },
+  confirmada: { label: "Confirmada" },
+  pendiente: { label: "Pendiente" },
+  reprogramada: { label: "Reprogramada" },
+  cancelada: { label: "Cancelada" },
+  no_asistio: { label: "No Asistió" },
+  asistida: { label: "Asistida" },
+  sin_respuesta: { label: "Sin Respuesta" },
+} as const;
+
+export type EstadoCita = keyof typeof estadosCita;
 
 // Recordatorios enviados table (logs de envíos a n8n webhook)
 export const recordatoriosEnviados = pgTable("recordatorios_enviados", {
