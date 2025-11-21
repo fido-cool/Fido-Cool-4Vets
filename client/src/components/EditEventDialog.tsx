@@ -42,6 +42,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { Mascota } from "@shared/schema";
+import { estadosCita } from "@shared/schema";
 
 interface MascotaWithCliente extends Mascota {
   cliente: {
@@ -55,6 +56,7 @@ interface EventoDetalle {
   tipo: string;
   fecha: Date;
   descripcion?: string | null;
+  estado?: string;
   mascotaNombre: string;
   clienteNombre: string;
 }
@@ -68,6 +70,7 @@ interface EditEventDialogProps {
     tipo?: string;
     fecha?: string;
     descripcion?: string;
+    estado?: string;
   }) => void;
   onDelete: (id: number) => void;
 }
@@ -78,6 +81,7 @@ const editEventSchema = z.object({
   fecha: z.string().min(1, "La fecha es requerida"),
   hora: z.string().optional(),
   descripcion: z.string().optional(),
+  estado: z.string().min(1, "Debes seleccionar un estado"),
 });
 
 type EditEventForm = z.infer<typeof editEventSchema>;
@@ -112,6 +116,7 @@ export function EditEventDialog({
       fecha: "",
       hora: "",
       descripcion: "",
+      estado: "programada",
     },
   });
 
@@ -127,6 +132,7 @@ export function EditEventDialog({
         fecha: fechaSolo,
         hora: horaSolo,
         descripcion: evento.descripcion || "",
+        estado: evento.estado || "programada",
       });
     }
   }, [evento, open, form]);
@@ -148,6 +154,7 @@ export function EditEventDialog({
       tipo: data.tipo,
       fecha: parsedDate.toISOString(),
       descripcion: data.descripcion || "",
+      estado: data.estado,
     });
     
     // Reset form after successful submission
@@ -242,6 +249,35 @@ export function EditEventDialog({
                             data-testid={`select-item-service-${servicio.value}`}
                           >
                             {servicio.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="estado"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estado de la Cita</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-edit-estado">
+                          <SelectValue placeholder="Selecciona un estado" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Object.entries(estadosCita).map(([key, value]) => (
+                          <SelectItem
+                            key={key}
+                            value={key}
+                            data-testid={`select-item-estado-${key}`}
+                          >
+                            {value.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
