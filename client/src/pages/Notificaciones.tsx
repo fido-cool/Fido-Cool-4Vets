@@ -5,6 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Bell, AlertTriangle, Info, X, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { apiRequest } from "@/lib/queryClient";
 import {
   Dialog,
@@ -67,6 +69,7 @@ interface Notificacion {
 export default function Notificaciones() {
   const [resueltas, setResueltas] = useState<Set<string>>(new Set());
   const [notificacionSeleccionada, setNotificacionSeleccionada] = useState<Notificacion | null>(null);
+  const [testMode, setTestMode] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<MessageForm>({
@@ -190,6 +193,7 @@ export default function Notificaciones() {
 
   const cerrarDialogRecordatorio = () => {
     setNotificacionSeleccionada(null);
+    setTestMode(false);
     form.reset({ mensaje: "" });
   };
 
@@ -201,6 +205,7 @@ export default function Notificaciones() {
       cliente: { nombre: string; email: string; telefono: string };
       mascota: { nombre: string };
       mensaje: string;
+      testMode?: boolean;
     }) => {
       return await apiRequest("POST", "/api/notificaciones/enviar-recordatorio", payload);
     },
@@ -236,6 +241,7 @@ export default function Notificaciones() {
         nombre: notificacionSeleccionada.mascotaNombre,
       },
       mensaje: data.mensaje,
+      testMode,
     });
   };
 
@@ -386,6 +392,23 @@ export default function Notificaciones() {
                     <span className="font-medium">Contacto:</span> {notificacionSeleccionada?.clienteTelefono} · {notificacionSeleccionada?.clienteEmail}
                   </p>
                 </div>
+              </div>
+
+              <div className="flex items-center space-x-2 p-3 rounded-lg border bg-muted/50">
+                <Switch
+                  id="test-mode"
+                  checked={testMode}
+                  onCheckedChange={setTestMode}
+                  data-testid="switch-test-mode"
+                />
+                <Label htmlFor="test-mode" className="flex flex-col gap-1 cursor-pointer">
+                  <span className="font-medium">Modo de Prueba</span>
+                  <span className="text-xs text-muted-foreground">
+                    {testMode 
+                      ? "Enviando a webhook de prueba: webhook-test/fido-mail" 
+                      : "Enviando a webhook de producción: webhook/fido-mail"}
+                  </span>
+                </Label>
               </div>
 
               <FormField

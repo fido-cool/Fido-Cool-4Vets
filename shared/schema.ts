@@ -215,6 +215,7 @@ export const enviarRecordatorioSchema = z.object({
     nombre: z.string(),
   }),
   mensaje: z.string().min(10, "El mensaje debe tener al menos 10 caracteres"),
+  testMode: z.boolean().optional().default(false),
 });
 
 export type EnviarRecordatorio = z.infer<typeof enviarRecordatorioSchema>;

@@ -427,8 +427,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate request body
       const data = enviarRecordatorioSchema.parse(req.body);
 
-      // Get webhook URL from environment variable or use production URL
-      const webhookUrl = process.env.FIDO_N8N_WEBHOOK_URL || "https://fidon8n.fido.cool/webhook/fido-mail";
+      // Get webhook URL based on test mode
+      const productionUrl = process.env.FIDO_N8N_WEBHOOK_URL || "https://fidon8n.fido.cool/webhook/fido-mail";
+      const testUrl = "https://fidon8n.fido.cool/webhook-test/fido-mail";
+      const webhookUrl = data.testMode ? testUrl : productionUrl;
 
       // Prepare payload for n8n webhook
       const webhookPayload = {
