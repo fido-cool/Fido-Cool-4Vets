@@ -1,4 +1,4 @@
-import { Home, Users, Heart, Calendar, Settings, LogOut, Bell, Megaphone } from "lucide-react";
+import { Home, Users, Heart, Calendar, Settings, LogOut, Bell } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -43,11 +43,6 @@ const menuItems = [
     title: "Notificaciones",
     url: "/notificaciones",
     icon: Bell,
-  },
-  {
-    title: "Campañas",
-    url: "/campanas",
-    icon: Megaphone,
   },
   {
     title: "Configuración",
