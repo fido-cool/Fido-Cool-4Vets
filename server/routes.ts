@@ -385,7 +385,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data.mascotaIds,
         data.tipos,
         fecha,
-        data.descripcion
+        data.descripcion,
+        data.estado
       );
       
       res.json({ 

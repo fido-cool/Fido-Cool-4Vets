@@ -599,7 +599,8 @@ export class DatabaseStorage implements IStorage {
     mascotaIds: number[],
     tipos: string[],
     fecha: Date,
-    descripcion?: string
+    descripcion?: string,
+    estado?: string
   ): Promise<Evento[]> {
     return await db.transaction(async (tx) => {
       const createdEventos: Evento[] = [];
@@ -613,6 +614,7 @@ export class DatabaseStorage implements IStorage {
               tipo,
               fecha,
               descripcion: descripcion || "Cita programada",
+              estado: (estado as any) || "programada",
             })
             .returning();
           createdEventos.push(evento);

@@ -29,6 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar, ChevronDown, X } from "lucide-react";
 import type { Mascota, Cliente } from "@shared/schema";
+import { estadosCita } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
 interface MascotaWithCliente extends Mascota {
@@ -43,6 +44,7 @@ interface AddEventDialogProps {
     tipos: string[];
     fecha: string;
     descripcion: string;
+    estado?: string;
   }) => void;
 }
 
@@ -53,6 +55,7 @@ export function AddEventDialog({ open, onOpenChange, onAdd }: AddEventDialogProp
   const [fechaSoloFecha, setFechaSoloFecha] = useState("");
   const [hora, setHora] = useState("");
   const [descripcion, setDescripcion] = useState("");
+  const [estado, setEstado] = useState("programada");
   const [mascotaPopoverOpen, setMascotaPopoverOpen] = useState(false);
   const [tipoPopoverOpen, setTipoPopoverOpen] = useState(false);
   const { toast } = useToast();
@@ -169,7 +172,8 @@ export function AddEventDialog({ open, onOpenChange, onAdd }: AddEventDialogProp
         mascotaIds,
         tipos,
         fecha: parsedDate.toISOString(), 
-        descripcion: descripcion.trim() || "Cita programada" 
+        descripcion: descripcion.trim() || "Cita programada",
+        estado 
       });
       
       setClienteId("");
@@ -178,6 +182,7 @@ export function AddEventDialog({ open, onOpenChange, onAdd }: AddEventDialogProp
       setFechaSoloFecha("");
       setHora("");
       setDescripcion("");
+      setEstado("programada");
       onOpenChange?.(false);
     }
   };
@@ -190,6 +195,7 @@ export function AddEventDialog({ open, onOpenChange, onAdd }: AddEventDialogProp
       setFechaSoloFecha("");
       setHora("");
       setDescripcion("");
+      setEstado("programada");
       setMascotaPopoverOpen(false);
       setTipoPopoverOpen(false);
     }
@@ -395,6 +401,25 @@ export function AddEventDialog({ open, onOpenChange, onAdd }: AddEventDialogProp
                   })}
                 </div>
               )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="estado">Estado de la Cita</Label>
+              <Select value={estado} onValueChange={setEstado}>
+                <SelectTrigger id="estado" data-testid="select-event-estado">
+                  <SelectValue placeholder="Selecciona un estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(estadosCita).map(([key, value]) => (
+                    <SelectItem
+                      key={key}
+                      value={key}
+                      data-testid={`select-item-estado-${key}`}
+                    >
+                      {value.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="descripcion">Descripción</Label>

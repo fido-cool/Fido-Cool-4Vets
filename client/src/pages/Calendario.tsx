@@ -49,6 +49,7 @@ interface CalendarEvent {
   mascotaNombre: string;
   clienteNombre: string;
   descripcion?: string | null;
+  estado?: string;
   fechaOriginal: Date;
 }
 
@@ -155,6 +156,7 @@ export default function Calendario() {
         mascotaNombre: evento.mascota.nombre,
         clienteNombre: evento.mascota.cliente.nombre,
         descripcion: evento.descripcion,
+        estado: evento.estado,
         fechaOriginal: start,
       };
     }) || [];
@@ -283,6 +285,7 @@ export default function Calendario() {
             tipo: selectedEvent.tipoKey,
             fecha: selectedEvent.fechaOriginal,
             descripcion: selectedEvent.descripcion,
+            estado: selectedEvent.estado,
             mascotaNombre: selectedEvent.mascotaNombre,
             clienteNombre: selectedEvent.clienteNombre,
           }}
