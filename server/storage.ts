@@ -490,6 +490,7 @@ export class DatabaseStorage implements IStorage {
         tipo: eventos.tipo,
         fecha: eventos.fecha,
         descripcion: eventos.descripcion,
+        estado: eventos.estado,
         createdAt: eventos.createdAt,
         mascotaIdVal: mascotas.id,
         mascotaNombre: mascotas.nombre,
@@ -510,6 +511,7 @@ export class DatabaseStorage implements IStorage {
       tipo: row.tipo,
       fecha: row.fecha,
       descripcion: row.descripcion,
+      estado: row.estado,
       createdAt: row.createdAt,
       mascota: {
         id: row.mascotaIdVal,
@@ -543,6 +545,7 @@ export class DatabaseStorage implements IStorage {
         tipo: eventos.tipo,
         fecha: eventos.fecha,
         descripcion: eventos.descripcion,
+        estado: eventos.estado,
         createdAt: eventos.createdAt,
         mascotaIdVal: mascotas.id,
         mascotaNombre: mascotas.nombre,
@@ -563,6 +566,7 @@ export class DatabaseStorage implements IStorage {
       tipo: row.tipo,
       fecha: row.fecha,
       descripcion: row.descripcion,
+      estado: row.estado,
       createdAt: row.createdAt,
       mascota: {
         id: row.mascotaIdVal,

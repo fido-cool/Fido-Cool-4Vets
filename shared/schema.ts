@@ -173,7 +173,17 @@ export const insertMultipleEventosSchema = z.object({
   tipos: z.array(z.string()).min(1, "Debes seleccionar al menos un tipo de servicio"),
   fecha: z.string(),
   descripcion: z.string().optional(),
-  estado: z.string().optional(),
+  estado: z.enum([
+    "programada",
+    "automatica",
+    "confirmada",
+    "pendiente",
+    "reprogramada",
+    "cancelada",
+    "no_asistio",
+    "asistida",
+    "sin_respuesta",
+  ]).optional(),
 });
 
 export type InsertMultipleEventos = z.infer<typeof insertMultipleEventosSchema>;
