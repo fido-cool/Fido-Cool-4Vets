@@ -398,6 +398,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/eventos/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const veterinarioId = getUserId(req);
+      if (!veterinarioId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const id = parseInt(req.params.id);
+      const data = insertEventoSchema.partial().parse(req.body);
+      
+      // If mascotaId is being updated, verify it belongs to this veterinarian
+      if (data.mascotaId) {
+        const mascota = await storage.getMascota(data.mascotaId, veterinarioId);
+        if (!mascota) {
+          return res.status(403).json({ 
+            message: "La mascota no pertenece a este veterinario" 
+          });
+        }
+      }
+      
+      const updated = await storage.updateEvento(id, veterinarioId, data);
+      if (!updated) {
+        return res.status(404).json({ message: "Evento not found" });
+      }
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error updating evento:", error);
+      res.status(400).json({ message: error.message || "Failed to update evento" });
+    }
+  });
+
   app.delete("/api/eventos/:id", isAuthenticated, async (req: any, res) => {
     try {
       const veterinarioId = getUserId(req);
