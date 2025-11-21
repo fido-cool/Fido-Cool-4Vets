@@ -67,6 +67,11 @@ export interface IStorage {
     (Evento & { mascota: { id: number; nombre: string; cliente: { id: number; nombre: string; telefono: string; email: string } } })[]
   >;
   createEvento(evento: InsertEvento): Promise<Evento>;
+  updateEvento(
+    id: number,
+    veterinarioId: string,
+    data: Partial<InsertEvento>
+  ): Promise<Evento | undefined>;
   deleteEvento(id: number, veterinarioId: string): Promise<boolean>;
 
   // Statistics
@@ -616,6 +621,32 @@ export class DatabaseStorage implements IStorage {
       
       return createdEventos;
     });
+  }
+
+  async updateEvento(
+    id: number,
+    veterinarioId: string,
+    data: Partial<InsertEvento>
+  ): Promise<Evento | undefined> {
+    const [updated] = await db
+      .update(eventos)
+      .set(data)
+      .where(
+        and(
+          eq(eventos.id, id),
+          eq(
+            eventos.mascotaId,
+            db
+              .select({ id: mascotas.id })
+              .from(mascotas)
+              .innerJoin(clientes, eq(mascotas.clienteId, clientes.id))
+              .where(eq(clientes.veterinarioId, veterinarioId))
+              .limit(1) as any
+          )
+        )
+      )
+      .returning();
+    return updated;
   }
 
   async deleteEvento(id: number, veterinarioId: string): Promise<boolean> {
