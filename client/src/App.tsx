@@ -11,6 +11,7 @@ import Dashboard from "@/pages/Dashboard";
 import Calendario from "@/pages/Calendario";
 import Clientes from "@/pages/Clientes";
 import Mascotas from "@/pages/Mascotas";
+import MascotaProfile from "@/pages/MascotaProfile";
 import Notificaciones from "@/pages/Notificaciones";
 import Eventos from "@/pages/Eventos";
 import Configuracion from "@/pages/Configuracion";
@@ -37,6 +38,7 @@ function ProtectedRoutes() {
       <Route path="/calendario" component={Calendario} />
       <Route path="/clientes" component={Clientes} />
       <Route path="/mascotas" component={Mascotas} />
+      <Route path="/mascotas/:id" component={MascotaProfile} />
       <Route path="/eventos" component={Eventos} />
       <Route path="/notificaciones" component={Notificaciones} />
       <Route path="/configuracion" component={Configuracion} />

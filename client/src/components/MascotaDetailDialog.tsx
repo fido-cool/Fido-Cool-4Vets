@@ -5,7 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar, Pencil, Trash2, Save, X as XIcon, User, PawPrint } from "lucide-react";
+import { useLocation } from "wouter";
+import { Calendar, Pencil, Trash2, Save, X as XIcon, User, PawPrint, Maximize2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -89,7 +90,15 @@ const estadoColors: Record<string, string> = {
 
 export function MascotaDetailDialog({ mascotaId, open, onOpenChange, onDelete }: MascotaDetailDialogProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
+
+  const handleExpand = () => {
+    if (mascotaId) {
+      onOpenChange(false);
+      setLocation(`/mascotas/${mascotaId}`);
+    }
+  };
 
   const form = useForm<EditMascotaForm>({
     resolver: zodResolver(editMascotaSchema),
@@ -261,6 +270,15 @@ export function MascotaDetailDialog({ mascotaId, open, onOpenChange, onDelete }:
                 </>
               ) : (
                 <>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={handleExpand}
+                    title="Expandir a pantalla completa"
+                    data-testid="button-expand-mascota"
+                  >
+                    <Maximize2 className="w-4 h-4" />
+                  </Button>
                   <Button
                     size="icon"
                     variant="ghost"
