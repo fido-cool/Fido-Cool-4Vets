@@ -214,18 +214,21 @@ export default function Dashboard() {
           value={stats?.totalClientes || 0}
           icon={Users}
           testId="metric-total-clients"
+          href="/clientes"
         />
         <MetricCard
           title="Total Mascotas"
           value={stats?.totalMascotas || 0}
           icon={Heart}
           testId="metric-total-pets"
+          href="/mascotas"
         />
         <MetricCard
           title="Próximos Eventos"
           value={stats?.proximosEventos || 0}
           icon={Calendar}
           testId="metric-upcoming-events"
+          href="/calendario"
         />
       </div>
 
