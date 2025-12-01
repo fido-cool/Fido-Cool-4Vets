@@ -45,7 +45,11 @@ const editMascotaSchema = z.object({
   nombre: z.string().min(1, "El nombre es requerido"),
   especie: z.string().min(1, "La especie es requerida"),
   raza: z.string().optional(),
+  sexo: z.string().optional(),
+  color: z.string().optional(),
   fechaNacimiento: z.string().optional(),
+  peso: z.string().optional(),
+  estadoReproductivo: z.string().optional(),
   notas: z.string().optional(),
 });
 
@@ -106,7 +110,11 @@ export function MascotaDetailDialog({ mascotaId, open, onOpenChange, onDelete }:
       nombre: "",
       especie: "",
       raza: "",
+      sexo: "",
+      color: "",
       fechaNacimiento: "",
+      peso: "",
+      estadoReproductivo: "",
       notas: "",
     },
   });
@@ -128,9 +136,13 @@ export function MascotaDetailDialog({ mascotaId, open, onOpenChange, onDelete }:
         nombre: details.mascota.nombre,
         especie: details.mascota.especie,
         raza: details.mascota.raza || "",
+        sexo: details.mascota.sexo || "",
+        color: details.mascota.color || "",
         fechaNacimiento: details.mascota.fechaNacimiento
           ? format(new Date(details.mascota.fechaNacimiento), "yyyy-MM-dd")
           : "",
+        peso: details.mascota.peso || "",
+        estadoReproductivo: details.mascota.estadoReproductivo || "",
         notas: details.mascota.notas || "",
       });
     }
@@ -179,9 +191,13 @@ export function MascotaDetailDialog({ mascotaId, open, onOpenChange, onDelete }:
         nombre: details.mascota.nombre,
         especie: details.mascota.especie,
         raza: details.mascota.raza || "",
+        sexo: details.mascota.sexo || "",
+        color: details.mascota.color || "",
         fechaNacimiento: details.mascota.fechaNacimiento
           ? format(new Date(details.mascota.fechaNacimiento), "yyyy-MM-dd")
           : "",
+        peso: details.mascota.peso || "",
+        estadoReproductivo: details.mascota.estadoReproductivo || "",
         notas: details.mascota.notas || "",
       });
     }
@@ -346,9 +362,6 @@ export function MascotaDetailDialog({ mascotaId, open, onOpenChange, onDelete }:
                                 <SelectContent>
                                   <SelectItem value="perro">Perro</SelectItem>
                                   <SelectItem value="gato">Gato</SelectItem>
-                                  <SelectItem value="ave">Ave</SelectItem>
-                                  <SelectItem value="roedor">Roedor</SelectItem>
-                                  <SelectItem value="reptil">Reptil</SelectItem>
                                   <SelectItem value="otro">Otro</SelectItem>
                                 </SelectContent>
                               </Select>
@@ -361,7 +374,7 @@ export function MascotaDetailDialog({ mascotaId, open, onOpenChange, onDelete }:
                           name="raza"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Raza (opcional)</FormLabel>
+                              <FormLabel>Raza</FormLabel>
                               <FormControl>
                                 <Input {...field} data-testid="input-edit-mascota-breed" />
                               </FormControl>
@@ -370,15 +383,87 @@ export function MascotaDetailDialog({ mascotaId, open, onOpenChange, onDelete }:
                           )}
                         />
                       </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <FormField
+                          control={form.control}
+                          name="sexo"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Sexo</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value || ""}>
+                                <FormControl>
+                                  <SelectTrigger data-testid="select-edit-mascota-sex">
+                                    <SelectValue placeholder="Seleccionar" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="macho">Macho</SelectItem>
+                                  <SelectItem value="hembra">Hembra</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="color"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Color</FormLabel>
+                              <FormControl>
+                                <Input {...field} data-testid="input-edit-mascota-color" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <FormField
+                          control={form.control}
+                          name="fechaNacimiento"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Fecha de Nacimiento</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} data-testid="input-edit-mascota-birth" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="peso"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Peso actual</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="ej: 5.2 kg" data-testid="input-edit-mascota-weight" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                       <FormField
                         control={form.control}
-                        name="fechaNacimiento"
+                        name="estadoReproductivo"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Fecha de Nacimiento (opcional)</FormLabel>
-                            <FormControl>
-                              <Input type="date" {...field} data-testid="input-edit-mascota-birth" />
-                            </FormControl>
+                            <FormLabel>Estado reproductivo</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
+                              <FormControl>
+                                <SelectTrigger data-testid="select-edit-mascota-reproductive">
+                                  <SelectValue placeholder="Seleccionar" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="entero">Entero</SelectItem>
+                                <SelectItem value="esterilizado">Esterilizado</SelectItem>
+                              </SelectContent>
+                            </Select>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -388,7 +473,7 @@ export function MascotaDetailDialog({ mascotaId, open, onOpenChange, onDelete }:
                         name="notas"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Notas (opcional)</FormLabel>
+                            <FormLabel>Notas</FormLabel>
                             <FormControl>
                               <Textarea {...field} data-testid="input-edit-mascota-notes" />
                             </FormControl>

@@ -48,7 +48,11 @@ const editMascotaSchema = z.object({
   nombre: z.string().min(1, "El nombre es requerido"),
   especie: z.string().min(1, "La especie es requerida"),
   raza: z.string().optional(),
+  sexo: z.string().optional(),
+  color: z.string().optional(),
   fechaNacimiento: z.string().optional(),
+  peso: z.string().optional(),
+  estadoReproductivo: z.string().optional(),
   notas: z.string().optional(),
 });
 
