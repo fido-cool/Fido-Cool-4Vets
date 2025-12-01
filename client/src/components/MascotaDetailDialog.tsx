@@ -6,7 +6,7 @@ import { z } from "zod";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useLocation } from "wouter";
-import { Calendar, Pencil, Trash2, Save, X as XIcon, User, PawPrint, Maximize2 } from "lucide-react";
+import { Calendar, Pencil, Trash2, Save, X as XIcon, User, PawPrint, Maximize2, Heart } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -51,6 +51,12 @@ const editMascotaSchema = z.object({
   peso: z.string().optional(),
   estadoReproductivo: z.string().optional(),
   notas: z.string().optional(),
+  alergias: z.string().optional(),
+  condicionesCronicas: z.string().optional(),
+  cirugiasPrevias: z.string().optional(),
+  enfermedadesAnteriores: z.string().optional(),
+  medicacionActual: z.string().optional(),
+  dietaRestricciones: z.string().optional(),
 });
 
 type EditMascotaForm = z.infer<typeof editMascotaSchema>;
@@ -116,6 +122,12 @@ export function MascotaDetailDialog({ mascotaId, open, onOpenChange, onDelete }:
       peso: "",
       estadoReproductivo: "",
       notas: "",
+      alergias: "",
+      condicionesCronicas: "",
+      cirugiasPrevias: "",
+      enfermedadesAnteriores: "",
+      medicacionActual: "",
+      dietaRestricciones: "",
     },
   });
 
@@ -144,6 +156,12 @@ export function MascotaDetailDialog({ mascotaId, open, onOpenChange, onDelete }:
         peso: details.mascota.peso || "",
         estadoReproductivo: details.mascota.estadoReproductivo || "",
         notas: details.mascota.notas || "",
+        alergias: details.mascota.alergias || "",
+        condicionesCronicas: details.mascota.condicionesCronicas || "",
+        cirugiasPrevias: details.mascota.cirugiasPrevias || "",
+        enfermedadesAnteriores: details.mascota.enfermedadesAnteriores || "",
+        medicacionActual: details.mascota.medicacionActual || "",
+        dietaRestricciones: details.mascota.dietaRestricciones || "",
       });
     }
   }, [details, form]);
@@ -199,6 +217,12 @@ export function MascotaDetailDialog({ mascotaId, open, onOpenChange, onDelete }:
         peso: details.mascota.peso || "",
         estadoReproductivo: details.mascota.estadoReproductivo || "",
         notas: details.mascota.notas || "",
+        alergias: details.mascota.alergias || "",
+        condicionesCronicas: details.mascota.condicionesCronicas || "",
+        cirugiasPrevias: details.mascota.cirugiasPrevias || "",
+        enfermedadesAnteriores: details.mascota.enfermedadesAnteriores || "",
+        medicacionActual: details.mascota.medicacionActual || "",
+        dietaRestricciones: details.mascota.dietaRestricciones || "",
       });
     }
     setIsEditing(false);
@@ -481,6 +505,91 @@ export function MascotaDetailDialog({ mascotaId, open, onOpenChange, onDelete }:
                           </FormItem>
                         )}
                       />
+
+                      <Separator className="my-4" />
+                      <div className="flex items-center gap-2 mb-3">
+                        <Heart className="w-4 h-4 text-red-500" />
+                        <span className="font-medium">Antecedentes Medicos</span>
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="alergias"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Alergias</FormLabel>
+                            <FormControl>
+                              <Textarea {...field} placeholder="Ej: Pollo, penicilina..." data-testid="input-edit-mascota-allergies" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="condicionesCronicas"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Condiciones cronicas</FormLabel>
+                            <FormControl>
+                              <Textarea {...field} placeholder="Ej: Dermatitis, cardiopatia, artrosis, renal..." data-testid="input-edit-mascota-chronic" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="cirugiasPrevias"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Cirugias previas</FormLabel>
+                            <FormControl>
+                              <Textarea {...field} placeholder="Ej: Esterilizacion (2023)..." data-testid="input-edit-mascota-surgeries" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="enfermedadesAnteriores"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Enfermedades importantes anteriores</FormLabel>
+                            <FormControl>
+                              <Textarea {...field} placeholder="Ej: Parvovirus (2022)..." data-testid="input-edit-mascota-diseases" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="medicacionActual"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Medicacion actual</FormLabel>
+                            <FormControl>
+                              <Textarea {...field} placeholder="Ej: Apoquel 16mg cada 12hrs..." data-testid="input-edit-mascota-medication" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="dietaRestricciones"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Dieta y restricciones alimentarias</FormLabel>
+                            <FormControl>
+                              <Textarea {...field} placeholder="Ej: Dieta hipoalergenica, sin granos..." data-testid="input-edit-mascota-diet" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </form>
                   </Form>
                 ) : (
@@ -522,6 +631,56 @@ export function MascotaDetailDialog({ mascotaId, open, onOpenChange, onDelete }:
                 )}
               </CardContent>
             </Card>
+
+            {(mascota.alergias || mascota.condicionesCronicas || mascota.cirugiasPrevias || 
+              mascota.enfermedadesAnteriores || mascota.medicacionActual || mascota.dietaRestricciones) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-red-500" />
+                    Antecedentes Medicos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {mascota.alergias && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Alergias:</p>
+                      <p className="text-sm" data-testid="text-mascota-allergies">{mascota.alergias}</p>
+                    </div>
+                  )}
+                  {mascota.condicionesCronicas && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Condiciones cronicas:</p>
+                      <p className="text-sm" data-testid="text-mascota-chronic">{mascota.condicionesCronicas}</p>
+                    </div>
+                  )}
+                  {mascota.cirugiasPrevias && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Cirugias previas:</p>
+                      <p className="text-sm" data-testid="text-mascota-surgeries">{mascota.cirugiasPrevias}</p>
+                    </div>
+                  )}
+                  {mascota.enfermedadesAnteriores && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Enfermedades anteriores:</p>
+                      <p className="text-sm" data-testid="text-mascota-diseases">{mascota.enfermedadesAnteriores}</p>
+                    </div>
+                  )}
+                  {mascota.medicacionActual && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Medicacion actual:</p>
+                      <p className="text-sm" data-testid="text-mascota-medication">{mascota.medicacionActual}</p>
+                    </div>
+                  )}
+                  {mascota.dietaRestricciones && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Dieta y restricciones:</p>
+                      <p className="text-sm" data-testid="text-mascota-diet">{mascota.dietaRestricciones}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             <Card>
               <CardHeader>

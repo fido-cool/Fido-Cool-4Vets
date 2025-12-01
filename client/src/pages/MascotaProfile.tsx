@@ -6,7 +6,7 @@ import { z } from "zod";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useRoute, useLocation } from "wouter";
-import { Calendar, Pencil, Trash2, Save, X as XIcon, User, PawPrint, ArrowLeft } from "lucide-react";
+import { Calendar, Pencil, Trash2, Save, X as XIcon, User, PawPrint, ArrowLeft, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -54,6 +54,12 @@ const editMascotaSchema = z.object({
   peso: z.string().optional(),
   estadoReproductivo: z.string().optional(),
   notas: z.string().optional(),
+  alergias: z.string().optional(),
+  condicionesCronicas: z.string().optional(),
+  cirugiasPrevias: z.string().optional(),
+  enfermedadesAnteriores: z.string().optional(),
+  medicacionActual: z.string().optional(),
+  dietaRestricciones: z.string().optional(),
 });
 
 type EditMascotaForm = z.infer<typeof editMascotaSchema>;
@@ -103,8 +109,18 @@ export default function MascotaProfile() {
       nombre: "",
       especie: "",
       raza: "",
+      sexo: "",
+      color: "",
       fechaNacimiento: "",
+      peso: "",
+      estadoReproductivo: "",
       notas: "",
+      alergias: "",
+      condicionesCronicas: "",
+      cirugiasPrevias: "",
+      enfermedadesAnteriores: "",
+      medicacionActual: "",
+      dietaRestricciones: "",
     },
   });
 
@@ -179,10 +195,20 @@ export default function MascotaProfile() {
         nombre: details.mascota.nombre,
         especie: details.mascota.especie,
         raza: details.mascota.raza || "",
+        sexo: details.mascota.sexo || "",
+        color: details.mascota.color || "",
         fechaNacimiento: details.mascota.fechaNacimiento
           ? format(new Date(details.mascota.fechaNacimiento), "yyyy-MM-dd")
           : "",
+        peso: details.mascota.peso || "",
+        estadoReproductivo: details.mascota.estadoReproductivo || "",
         notas: details.mascota.notas || "",
+        alergias: details.mascota.alergias || "",
+        condicionesCronicas: details.mascota.condicionesCronicas || "",
+        cirugiasPrevias: details.mascota.cirugiasPrevias || "",
+        enfermedadesAnteriores: details.mascota.enfermedadesAnteriores || "",
+        medicacionActual: details.mascota.medicacionActual || "",
+        dietaRestricciones: details.mascota.dietaRestricciones || "",
       });
     }
     setIsEditing(false);
@@ -362,9 +388,6 @@ export default function MascotaProfile() {
                               <SelectContent>
                                 <SelectItem value="perro">Perro</SelectItem>
                                 <SelectItem value="gato">Gato</SelectItem>
-                                <SelectItem value="ave">Ave</SelectItem>
-                                <SelectItem value="roedor">Roedor</SelectItem>
-                                <SelectItem value="reptil">Reptil</SelectItem>
                                 <SelectItem value="otro">Otro</SelectItem>
                               </SelectContent>
                             </Select>
@@ -377,7 +400,7 @@ export default function MascotaProfile() {
                         name="raza"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Raza (opcional)</FormLabel>
+                            <FormLabel>Raza</FormLabel>
                             <FormControl>
                               <Input {...field} data-testid="input-profile-mascota-breed" />
                             </FormControl>
@@ -386,15 +409,87 @@ export default function MascotaProfile() {
                         )}
                       />
                     </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="sexo"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Sexo</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
+                              <FormControl>
+                                <SelectTrigger data-testid="select-profile-mascota-sex">
+                                  <SelectValue placeholder="Seleccionar" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="macho">Macho</SelectItem>
+                                <SelectItem value="hembra">Hembra</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="color"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Color</FormLabel>
+                            <FormControl>
+                              <Input {...field} data-testid="input-profile-mascota-color" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="fechaNacimiento"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Fecha de Nacimiento</FormLabel>
+                            <FormControl>
+                              <Input type="date" {...field} data-testid="input-profile-mascota-birth" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="peso"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Peso actual</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="ej: 5.2 kg" data-testid="input-profile-mascota-weight" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                     <FormField
                       control={form.control}
-                      name="fechaNacimiento"
+                      name="estadoReproductivo"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Fecha de Nacimiento (opcional)</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} data-testid="input-profile-mascota-birth" />
-                          </FormControl>
+                          <FormLabel>Estado reproductivo</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value || ""}>
+                            <FormControl>
+                              <SelectTrigger data-testid="select-profile-mascota-reproductive">
+                                <SelectValue placeholder="Seleccionar" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="entero">Entero</SelectItem>
+                              <SelectItem value="esterilizado">Esterilizado</SelectItem>
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -404,13 +499,94 @@ export default function MascotaProfile() {
                       name="notas"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Notas (opcional)</FormLabel>
+                          <FormLabel>Notas</FormLabel>
                           <FormControl>
-                            <Textarea 
-                              {...field} 
-                              rows={4}
-                              data-testid="input-profile-mascota-notes" 
-                            />
+                            <Textarea {...field} rows={3} data-testid="input-profile-mascota-notes" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <Separator className="my-4" />
+                    <div className="flex items-center gap-2 mb-3">
+                      <Heart className="w-4 h-4 text-red-500" />
+                      <span className="font-medium">Antecedentes Medicos</span>
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="alergias"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Alergias</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} placeholder="Ej: Pollo, penicilina..." data-testid="input-profile-mascota-allergies" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="condicionesCronicas"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Condiciones cronicas</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} placeholder="Ej: Dermatitis, cardiopatia, artrosis, renal..." data-testid="input-profile-mascota-chronic" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="cirugiasPrevias"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Cirugias previas</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} placeholder="Ej: Esterilizacion (2023)..." data-testid="input-profile-mascota-surgeries" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="enfermedadesAnteriores"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Enfermedades importantes anteriores</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} placeholder="Ej: Parvovirus (2022)..." data-testid="input-profile-mascota-diseases" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="medicacionActual"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Medicacion actual</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} placeholder="Ej: Apoquel 16mg cada 12hrs..." data-testid="input-profile-mascota-medication" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="dietaRestricciones"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Dieta y restricciones alimentarias</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} placeholder="Ej: Dieta hipoalergenica, sin granos..." data-testid="input-profile-mascota-diet" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -457,6 +633,56 @@ export default function MascotaProfile() {
               )}
             </CardContent>
           </Card>
+
+          {(mascota.alergias || mascota.condicionesCronicas || mascota.cirugiasPrevias || 
+            mascota.enfermedadesAnteriores || mascota.medicacionActual || mascota.dietaRestricciones) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Heart className="w-5 h-5 text-red-500" />
+                  Antecedentes Medicos
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {mascota.alergias && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Alergias:</p>
+                    <p className="text-sm" data-testid="text-profile-allergies">{mascota.alergias}</p>
+                  </div>
+                )}
+                {mascota.condicionesCronicas && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Condiciones cronicas:</p>
+                    <p className="text-sm" data-testid="text-profile-chronic">{mascota.condicionesCronicas}</p>
+                  </div>
+                )}
+                {mascota.cirugiasPrevias && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Cirugias previas:</p>
+                    <p className="text-sm" data-testid="text-profile-surgeries">{mascota.cirugiasPrevias}</p>
+                  </div>
+                )}
+                {mascota.enfermedadesAnteriores && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Enfermedades anteriores:</p>
+                    <p className="text-sm" data-testid="text-profile-diseases">{mascota.enfermedadesAnteriores}</p>
+                  </div>
+                )}
+                {mascota.medicacionActual && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Medicacion actual:</p>
+                    <p className="text-sm" data-testid="text-profile-medication">{mascota.medicacionActual}</p>
+                  </div>
+                )}
+                {mascota.dietaRestricciones && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Dieta y restricciones:</p>
+                    <p className="text-sm" data-testid="text-profile-diet">{mascota.dietaRestricciones}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>

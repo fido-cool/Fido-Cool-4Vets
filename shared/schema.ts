@@ -102,6 +102,12 @@ export const mascotas = pgTable("mascotas", {
   estadoReproductivo: varchar("estado_reproductivo", { length: 50 }),
   fotoUrl: varchar("foto_url"),
   notas: text("notas"),
+  alergias: text("alergias"),
+  condicionesCronicas: text("condiciones_cronicas"),
+  cirugiasPrevias: text("cirugias_previas"),
+  enfermedadesAnteriores: text("enfermedades_anteriores"),
+  medicacionActual: text("medicacion_actual"),
+  dietaRestricciones: text("dieta_restricciones"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
