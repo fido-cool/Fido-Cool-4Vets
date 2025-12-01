@@ -300,6 +300,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/mascotas/:id/details", isAuthenticated, async (req: any, res) => {
+    try {
+      const veterinarioId = getUserId(req);
+      if (!veterinarioId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const id = parseInt(req.params.id);
+      const details = await storage.getMascotaWithDetails(id, veterinarioId);
+      if (!details) {
+        return res.status(404).json({ message: "Mascota not found" });
+      }
+      res.json(details);
+    } catch (error) {
+      console.error("Error fetching mascota details:", error);
+      res.status(500).json({ message: "Failed to fetch mascota details" });
+    }
+  });
+
   app.post("/api/mascotas", isAuthenticated, async (req: any, res) => {
     try {
       const veterinarioId = getUserId(req);

@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { AddPetDialog } from "@/components/AddPetDialog";
+import { MascotaDetailDialog } from "@/components/MascotaDetailDialog";
 import { EmptyState } from "@/components/EmptyState";
 import addPetImage from "@assets/generated_images/Add_new_pet_illustration_87160775.png";
 import type { Mascota, Cliente } from "@shared/schema";
@@ -37,6 +38,8 @@ export default function Mascotas() {
   const [searchTerm, setSearchTerm] = useState("");
   const [deletePetId, setDeletePetId] = useState<number | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedMascotaId, setSelectedMascotaId] = useState<number | null>(null);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const { data: mascotas = [], isLoading } = useQuery<MascotaWithCliente[]>({
@@ -167,7 +170,15 @@ export default function Mascotas() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredPets.map((pet) => (
-              <Card key={pet.id} className="hover-elevate" data-testid={`pet-card-${pet.id}`}>
+              <Card 
+                key={pet.id} 
+                className="hover-elevate cursor-pointer" 
+                data-testid={`pet-card-${pet.id}`}
+                onClick={() => {
+                  setSelectedMascotaId(pet.id);
+                  setIsDetailDialogOpen(true);
+                }}
+              >
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
@@ -189,13 +200,17 @@ export default function Mascotas() {
                           variant="ghost"
                           size="icon"
                           data-testid={`button-pet-actions-${pet.id}`}
+                          onClick={(e) => e.stopPropagation()}
                         >
                           <MoreVertical className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
-                          onClick={() => setDeletePetId(pet.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletePetId(pet.id);
+                          }}
                           className="text-destructive"
                           data-testid={`menu-delete-pet-${pet.id}`}
                         >
@@ -261,6 +276,16 @@ export default function Mascotas() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <MascotaDetailDialog
+        mascotaId={selectedMascotaId}
+        open={isDetailDialogOpen}
+        onOpenChange={setIsDetailDialogOpen}
+        onDelete={(id) => {
+          setDeletePetId(id);
+          setIsDetailDialogOpen(false);
+        }}
+      />
     </div>
   );
 }

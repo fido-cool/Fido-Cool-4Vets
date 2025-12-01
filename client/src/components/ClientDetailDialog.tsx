@@ -37,6 +37,7 @@ import { serviceTypes } from "@shared/schema";
 import type { Cliente, Mascota, Evento } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { MascotaDetailDialog } from "./MascotaDetailDialog";
 
 // Validation schema for editing cliente
 const editClienteSchema = z.object({
@@ -62,6 +63,8 @@ interface ClienteDetails {
 
 export function ClientDetailDialog({ clienteId, open, onOpenChange, onDelete }: ClientDetailDialogProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [selectedMascotaId, setSelectedMascotaId] = useState<number | null>(null);
+  const [isMascotaDialogOpen, setIsMascotaDialogOpen] = useState(false);
   const { toast } = useToast();
 
   // Editable state for mascotas
@@ -429,7 +432,14 @@ export function ClientDetailDialog({ clienteId, open, onOpenChange, onDelete }: 
                             </div>
                           </div>
                         ) : (
-                          <div className="flex items-start justify-between">
+                          <div 
+                            className="flex items-start justify-between cursor-pointer hover:bg-muted/50 rounded-md p-2 -m-2 transition-colors"
+                            onClick={() => {
+                              setSelectedMascotaId(mascota.id);
+                              setIsMascotaDialogOpen(true);
+                            }}
+                            data-testid={`button-view-pet-${mascota.id}`}
+                          >
                             <div className="space-y-1">
                               <p className="font-semibold" data-testid={`text-pet-name-${mascota.id}`}>
                                 {mascota.nombre}
@@ -526,6 +536,12 @@ export function ClientDetailDialog({ clienteId, open, onOpenChange, onDelete }: 
           </div>
         </ScrollArea>
       </DialogContent>
+
+      <MascotaDetailDialog
+        mascotaId={selectedMascotaId}
+        open={isMascotaDialogOpen}
+        onOpenChange={setIsMascotaDialogOpen}
+      />
     </Dialog>
   );
 }

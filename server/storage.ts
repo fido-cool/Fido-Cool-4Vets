@@ -51,6 +51,11 @@ export interface IStorage {
   getMascotas(veterinarioId: string): Promise<(Mascota & { cliente: { nombre: string } })[]>;
   getMascotasByCliente(clienteId: number): Promise<Mascota[]>;
   getMascota(id: number, veterinarioId: string): Promise<Mascota | undefined>;
+  getMascotaWithDetails(id: number, veterinarioId: string): Promise<{
+    mascota: Mascota;
+    cliente: Cliente;
+    eventos: Evento[];
+  } | undefined>;
   createMascota(mascota: InsertMascota): Promise<Mascota>;
   updateMascota(
     id: number,
@@ -437,6 +442,39 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(clientes, eq(mascotas.clienteId, clientes.id))
       .where(and(eq(mascotas.id, id), eq(clientes.veterinarioId, veterinarioId)));
     return mascota;
+  }
+
+  async getMascotaWithDetails(id: number, veterinarioId: string): Promise<{
+    mascota: Mascota;
+    cliente: Cliente;
+    eventos: Evento[];
+  } | undefined> {
+    // Get the mascota with its cliente
+    const [result] = await db
+      .select({
+        mascota: mascotas,
+        cliente: clientes,
+      })
+      .from(mascotas)
+      .innerJoin(clientes, eq(mascotas.clienteId, clientes.id))
+      .where(and(eq(mascotas.id, id), eq(clientes.veterinarioId, veterinarioId)));
+
+    if (!result) {
+      return undefined;
+    }
+
+    // Get the eventos for this mascota
+    const mascotaEventos = await db
+      .select()
+      .from(eventos)
+      .where(eq(eventos.mascotaId, id))
+      .orderBy(desc(eventos.fecha));
+
+    return {
+      mascota: result.mascota,
+      cliente: result.cliente,
+      eventos: mascotaEventos,
+    };
   }
 
   async createMascota(mascota: InsertMascota): Promise<Mascota> {
