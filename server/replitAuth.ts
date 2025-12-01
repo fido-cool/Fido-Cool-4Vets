@@ -99,8 +99,39 @@ export async function setupAuth(app: Express) {
     }
   };
 
-  passport.serializeUser((user: Express.User, cb) => cb(null, user));
-  passport.deserializeUser((user: Express.User, cb) => cb(null, user));
+  // Serialize user: store only type and id to avoid session leakage
+  passport.serializeUser((user: any, cb) => {
+    if (user.claims && user.claims.sub) {
+      // Replit Auth user - store claims and tokens
+      cb(null, { authType: 'replit', userId: user.claims.sub, claims: user.claims, access_token: user.access_token, refresh_token: user.refresh_token, expires_at: user.expires_at });
+    } else if (user.id) {
+      // Local auth user - store just the id
+      cb(null, { authType: 'local', userId: user.id });
+    } else {
+      cb(new Error('Invalid user object'));
+    }
+  });
+
+  // Deserialize user: fetch fresh user data from database
+  passport.deserializeUser(async (data: any, cb) => {
+    try {
+      if (data.authType === 'replit') {
+        // Replit Auth - reconstruct user object with claims
+        cb(null, { claims: data.claims, access_token: data.access_token, refresh_token: data.refresh_token, expires_at: data.expires_at });
+      } else if (data.authType === 'local') {
+        // Local auth - fetch user from database
+        const user = await storage.getUser(data.userId);
+        if (!user) {
+          return cb(null, false);
+        }
+        cb(null, { id: user.id, email: user.email });
+      } else {
+        cb(null, false);
+      }
+    } catch (error) {
+      cb(error);
+    }
+  });
 
   app.get("/api/login", (req, res, next) => {
     ensureStrategy(req.hostname);
