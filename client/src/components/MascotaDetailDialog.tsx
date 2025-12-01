@@ -6,7 +6,8 @@ import { z } from "zod";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useLocation } from "wouter";
-import { Calendar, Pencil, Trash2, Save, X as XIcon, User, PawPrint, Maximize2, Heart } from "lucide-react";
+import { Calendar, Pencil, Trash2, Save, X as XIcon, User, PawPrint, Maximize2, Heart, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -100,6 +101,8 @@ const estadoColors: Record<string, string> = {
 
 export function MascotaDetailDialog({ mascotaId, open, onOpenChange, onDelete }: MascotaDetailDialogProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(true);
+  const [medicalOpen, setMedicalOpen] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -346,14 +349,21 @@ export function MascotaDetailDialog({ mascotaId, open, onOpenChange, onDelete }:
 
         <ScrollArea className="max-h-[calc(85vh-120px)]">
           <div className="space-y-6 pr-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <PawPrint className="w-4 h-4" />
-                  Informacion de la Mascota
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
+            <Collapsible open={infoOpen} onOpenChange={setInfoOpen}>
+              <Card>
+                <CollapsibleTrigger asChild>
+                  <CardHeader className="cursor-pointer hover-elevate">
+                    <CardTitle className="text-lg flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <PawPrint className="w-4 h-4" />
+                        Informacion de la Mascota
+                      </span>
+                      <ChevronDown className={`w-4 h-4 transition-transform ${infoOpen ? "rotate-180" : ""}`} />
+                    </CardTitle>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="space-y-3">
                 {isEditing ? (
                   <Form {...form}>
                     <form className="space-y-3">
@@ -629,58 +639,70 @@ export function MascotaDetailDialog({ mascotaId, open, onOpenChange, onDelete }:
                     )}
                   </div>
                 )}
-              </CardContent>
-            </Card>
-
-            {(mascota.alergias || mascota.condicionesCronicas || mascota.cirugiasPrevias || 
-              mascota.enfermedadesAnteriores || mascota.medicacionActual || mascota.dietaRestricciones) && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Heart className="w-4 h-4 text-red-500" />
-                    Antecedentes Medicos
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {mascota.alergias && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Alergias:</p>
-                      <p className="text-sm" data-testid="text-mascota-allergies">{mascota.alergias}</p>
-                    </div>
-                  )}
-                  {mascota.condicionesCronicas && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Condiciones cronicas:</p>
-                      <p className="text-sm" data-testid="text-mascota-chronic">{mascota.condicionesCronicas}</p>
-                    </div>
-                  )}
-                  {mascota.cirugiasPrevias && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Cirugias previas:</p>
-                      <p className="text-sm" data-testid="text-mascota-surgeries">{mascota.cirugiasPrevias}</p>
-                    </div>
-                  )}
-                  {mascota.enfermedadesAnteriores && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Enfermedades anteriores:</p>
-                      <p className="text-sm" data-testid="text-mascota-diseases">{mascota.enfermedadesAnteriores}</p>
-                    </div>
-                  )}
-                  {mascota.medicacionActual && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Medicacion actual:</p>
-                      <p className="text-sm" data-testid="text-mascota-medication">{mascota.medicacionActual}</p>
-                    </div>
-                  )}
-                  {mascota.dietaRestricciones && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Dieta y restricciones:</p>
-                      <p className="text-sm" data-testid="text-mascota-diet">{mascota.dietaRestricciones}</p>
-                    </div>
-                  )}
-                </CardContent>
+                  </CardContent>
+                </CollapsibleContent>
               </Card>
-            )}
+            </Collapsible>
+
+            <Collapsible open={medicalOpen} onOpenChange={setMedicalOpen}>
+              <Card>
+                <CollapsibleTrigger asChild>
+                  <CardHeader className="cursor-pointer hover-elevate">
+                    <CardTitle className="text-lg flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <Heart className="w-4 h-4 text-red-500" />
+                        Antecedentes Medicos
+                      </span>
+                      <ChevronDown className={`w-4 h-4 transition-transform ${medicalOpen ? "rotate-180" : ""}`} />
+                    </CardTitle>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="space-y-3">
+                    {mascota.alergias && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Alergias:</p>
+                        <p className="text-sm" data-testid="text-mascota-allergies">{mascota.alergias}</p>
+                      </div>
+                    )}
+                    {mascota.condicionesCronicas && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Condiciones cronicas:</p>
+                        <p className="text-sm" data-testid="text-mascota-chronic">{mascota.condicionesCronicas}</p>
+                      </div>
+                    )}
+                    {mascota.cirugiasPrevias && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Cirugias previas:</p>
+                        <p className="text-sm" data-testid="text-mascota-surgeries">{mascota.cirugiasPrevias}</p>
+                      </div>
+                    )}
+                    {mascota.enfermedadesAnteriores && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Enfermedades anteriores:</p>
+                        <p className="text-sm" data-testid="text-mascota-diseases">{mascota.enfermedadesAnteriores}</p>
+                      </div>
+                    )}
+                    {mascota.medicacionActual && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Medicacion actual:</p>
+                        <p className="text-sm" data-testid="text-mascota-medication">{mascota.medicacionActual}</p>
+                      </div>
+                    )}
+                    {mascota.dietaRestricciones && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Dieta y restricciones:</p>
+                        <p className="text-sm" data-testid="text-mascota-diet">{mascota.dietaRestricciones}</p>
+                      </div>
+                    )}
+                    {!mascota.alergias && !mascota.condicionesCronicas && !mascota.cirugiasPrevias && 
+                      !mascota.enfermedadesAnteriores && !mascota.medicacionActual && !mascota.dietaRestricciones && (
+                      <p className="text-sm text-muted-foreground">No hay antecedentes medicos registrados.</p>
+                    )}
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
 
             <Card>
               <CardHeader>
